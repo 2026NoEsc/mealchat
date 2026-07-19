@@ -9,6 +9,7 @@ export const themeColors = {
     surfaceDarker: '#E5E7EB',
     text: '#333333',
     textMuted: '#8E8E93',
+    textTertiary: '#999999',
     border: '#E5E7EB',
     input: '#FFFFFF',
     danger: '#FF6B8B',
@@ -19,6 +20,12 @@ export const themeColors = {
     avatarBg: '#E5E7EB',
     modalOverlay: 'rgba(51, 51, 51, 0.4)',
     badgeBg: 'rgba(35, 164, 85, 0.08)',
+    // UI 설계 색상
+    menuNeeded: '#FF8C42',
+    menuComplete: '#4ECDC4',
+    scheduleInProgress: '#5B9BD5',
+    confirmed: '#9B59B6',
+    unreadBadge: '#FF0000',
   },
   dark: {
     background: '#0F172A',
@@ -28,6 +35,7 @@ export const themeColors = {
     surfaceDarker: '#0F172A',
     text: '#F8FAFC',
     textMuted: '#94A3B8',
+    textTertiary: '#B0B8C4',
     border: 'rgba(255, 255, 255, 0.08)',
     input: 'rgba(255, 255, 255, 0.05)',
     danger: '#EF4444',
@@ -38,12 +46,20 @@ export const themeColors = {
     avatarBg: 'rgba(255, 255, 255, 0.03)',
     modalOverlay: 'rgba(0, 0, 0, 0.7)',
     badgeBg: 'rgba(255, 255, 255, 0.04)',
+    // UI 설계 색상 (다크 톤)
+    menuNeeded: '#FF9A4D',
+    menuComplete: '#5FE3D8',
+    scheduleInProgress: '#6BA5E8',
+    confirmed: '#B984E0',
+    unreadBadge: '#FF4444',
   }
 };
 
 // Default to light mode (White background + Matcha green point)
 // Later, they can change this to be dynamic based on a context or state
 export const THEME = themeColors.light;
+
+export type ThemeType = typeof themeColors.light;
 
 export const PALETTE_COLORS = [
   '#23A455', // MealChat Green (Default for Rooms)
