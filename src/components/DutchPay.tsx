@@ -151,6 +151,7 @@ export const DutchPay: React.FC<DutchPayProps> = ({
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showNeededOnly, setShowNeededOnly] = useState(true);
 
   const onRefresh = async () => {
     try {
@@ -956,6 +957,47 @@ ${participants.map(p => `- 이름: ${p.name}, ID: ${p.profile_id || p.id}`).join
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.primary]} />
       }
     >
+      {/* Settlement Status Header - Improved */}
+      <View style={styles.statusHeaderCard}>
+        <Text style={styles.statusHeaderTitle}>N빵 정산</Text>
+
+        {/* Needed vs Completed Tabs */}
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              showNeededOnly && styles.tabButtonActive
+            ]}
+            onPress={() => setShowNeededOnly(true)}
+          >
+            <Text
+              style={[
+                styles.tabButtonText,
+                showNeededOnly && styles.tabButtonTextActive
+              ]}
+            >
+              정산 필요
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              !showNeededOnly && styles.tabButtonActive
+            ]}
+            onPress={() => setShowNeededOnly(false)}
+          >
+            <Text
+              style={[
+                styles.tabButtonText,
+                !showNeededOnly && styles.tabButtonTextActive
+              ]}
+            >
+              정산 완료
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Permanent Ledger Header */}
       <View style={styles.header}>
         <Text style={styles.title}>💸 1/N 엔빵 정산 대장</Text>
@@ -1184,53 +1226,57 @@ ${participants.map(p => `- 이름: ${p.name}, ID: ${p.profile_id || p.id}`).join
         </View>
       )}
 
-      {/* Bill List */}
+      {/* Bill List - Filtered by Tab */}
       {loading ? (
         <ActivityIndicator size="large" color={THEME.primary} style={{ marginVertical: 20 }} />
       ) : bills.length > 0 ? (
         <View style={{ gap: 12 }}>
-          {bills.map(bill => {
+          {bills
+            .filter(bill => {
+              const hasUncompletedMembers = bill.dutch_pay_members?.some(m => !m.is_completed) || false;
+              return showNeededOnly ? hasUncompletedMembers : !hasUncompletedMembers;
+            })
+            .map(bill => {
             const amountPerPerson = Math.round(bill.total_amount / bill.split_count);
             const isSelected = selectedBill?.id === bill.id;
+            const hasUncompletedMembers = bill.dutch_pay_members?.some(m => !m.is_completed) || false;
 
             return (
-              <View key={bill.id} style={styles.billCard}>
+              <View key={bill.id} style={[
+                styles.billCard,
+                {
+                  backgroundColor: hasUncompletedMembers ? THEME.menuNeeded : THEME.menuComplete,
+                  opacity: hasUncompletedMembers ? 1 : 0.6,
+                }
+              ]}>
                 <TouchableOpacity
                   style={styles.billCardHeader}
                   onPress={() => setSelectedBill(isSelected ? null : bill)}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.billTitle}>{bill.title}</Text>
-                    <Text style={styles.billMeta}>
-                      총 {bill.total_amount.toLocaleString()}원 | {bill.split_count}명
+                    <Text style={[styles.billTitle, { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }]}>
+                      {bill.title}
+                    </Text>
+                    <Text style={[styles.billMeta, { color: '#FFFFFF' + 'cc', fontSize: 12, marginTop: 4 }]}>
+                      {new Date(bill.created_at).toLocaleDateString('ko-KR')}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.billSplitAmount}>
-                      {(() => {
-                        const myMember = bill.dutch_pay_members?.find(m => m.profile_id === globalProfile?.id);
-                        const hasCustomSplit = bill.dutch_pay_members?.some(m => m.name.includes(':'));
-                        if (myMember) {
-                          return `${getMemberAmount(bill, myMember, globalProfile?.id).toLocaleString()}원`;
-                        }
-                        if (globalProfile && bill.creator_id === globalProfile.id && hasCustomSplit) {
-                          return '개별 정산';
-                        }
-                        return `${Math.round(bill.total_amount / (bill.split_count || 1)).toLocaleString()}원`;
-                      })()}
+                    <Text style={[styles.billSplitAmount, { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }]}>
+                      ¥{bill.total_amount.toLocaleString()}
                     </Text>
-                    <Text style={styles.billSplitSub}>
-                      {(() => {
-                        const myMember = bill.dutch_pay_members?.find(m => m.profile_id === globalProfile?.id);
-                        const hasCustomSplit = bill.dutch_pay_members?.some(m => m.name.includes(':'));
-                        if (globalProfile && bill.creator_id === globalProfile.id && hasCustomSplit) {
-                          return '총액 나눔';
-                        }
-                        return '내 정산 금액';
-                      })()}
+                    <Text style={[styles.billSplitSub, { color: '#FFFFFF' + 'cc', fontSize: 12 }]}>
+                      {bill.split_count}명 N빵
                     </Text>
                   </View>
                 </TouchableOpacity>
+
+                {/* Status Badge */}
+                <View style={[styles.statusBadgeContainer, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#FFFFFF' + '33' }]}>
+                  <Text style={styles.statusBadgeText}>
+                    {hasUncompletedMembers ? '정산 필요' : '✓ 정산 완료'}
+                  </Text>
+                </View>
 
                 {/* Expanded QR & Deep links details */}
                 {isSelected && (
@@ -1519,6 +1565,49 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.background,
     padding: 16
   },
+  statusHeaderCard: {
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  statusHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: THEME.border,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  tabButtonActive: {
+    backgroundColor: THEME.menuNeeded,
+  },
+  tabButtonText: {
+    fontWeight: 'bold',
+    color: THEME.textMuted,
+  },
+  tabButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  statusBadgeContainer: {
+    alignItems: 'center',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
   header: {
     marginBottom: 16
   },
@@ -1599,41 +1688,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   billCard: {
-    backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    borderRadius: 10,
-    padding: 12
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
   billCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'flex-start'
   },
   billTitle: {
-    color: THEME.text,
     fontSize: 13,
     fontWeight: 'bold'
   },
   billMeta: {
-    color: THEME.textMuted,
     fontSize: 11,
     marginTop: 2
   },
   billSplitAmount: {
-    color: THEME.danger,
     fontSize: 14,
     fontWeight: 'bold'
   },
   billSplitSub: {
-    color: THEME.textMuted,
     fontSize: 9,
     marginTop: 2
   },
   expandedDetails: {
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: '#FFFFFF' + '33',
     paddingTop: 12,
     alignItems: 'center',
     width: '100%'
