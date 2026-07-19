@@ -7,6 +7,7 @@ import type { Room } from '../lib/types';
 interface RoomCardProps {
   room: Room;
   unreadCount: number;
+  participantCount?: number;
   onPress: () => void;
   onChatPress: () => void;
   onMenuPress: () => void;
@@ -33,6 +34,7 @@ const getStatusBadgeLabel = (room: Room): string => {
 export const RoomCard: React.FC<RoomCardProps> = ({
   room,
   unreadCount,
+  participantCount,
   onPress,
   onChatPress,
   onMenuPress,
@@ -72,7 +74,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* 메타정보: 날짜 + 참여자 수 */}
       <Text style={styles.metaInfo}>
-        {displayDate} • {/* 참여자 수는 나중에 추가 */}
+        {displayDate} {participantCount ? `• ${participantCount}명 참여` : ''}
       </Text>
 
       {/* 주요 액션: 채팅, 메뉴, 일정 */}

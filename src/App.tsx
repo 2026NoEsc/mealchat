@@ -3415,7 +3415,7 @@ ${inviteLink}
                               메뉴 선정
                             </Text>
                             <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
-                              {selectedCount}명 중 {selectedCount}명 선정 완료
+                              {selectedCount}명 중 {totalCount}명 선정 완료
                             </Text>
                             {/* 진행도 바 */}
                             <View
@@ -3796,7 +3796,7 @@ ${inviteLink}
                               일정 조율
                             </Text>
                             <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
-                              {scheduleSelectedCount}명 중 {scheduleSelectedCount}명 선택 완료
+                              {scheduleSelectedCount}명 중 {totalParticipants}명 선택 완료
                             </Text>
                             {/* Progress Bar */}
                             <View
