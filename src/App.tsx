@@ -3779,26 +3779,132 @@ ${inviteLink}
                           </TouchableOpacity>
                         </View>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <ScheduleGrid
-                          meetingDate={currentRoom.meeting_date}
-                          participants={participants}
-                          currentParticipantId={currentParticipant?.id || ''}
-                          onSaveSchedule={handleSaveParticipantSchedule}
-                          isConfirmed={currentRoom.is_confirmed}
-                          confirmedSlot={currentRoom.confirmed_slot}
-                          onConfirmSchedule={(slot) => {
-                            handleConfirmSchedule(slot);
-                            setRoomOverlay(null);
+
+                      {/* Progress Display */}
+                      {(() => {
+                        const scheduleSelectedCount = participants.filter(p =>
+                          p.schedule && Object.keys(p.schedule).length > 0
+                        ).length;
+                        const totalParticipants = participants.length;
+                        const progressPercent = totalParticipants > 0 ? (scheduleSelectedCount / totalParticipants) * 100 : 0;
+
+                        return (
+                          <View style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 16 }}>
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                              일정 조율
+                            </Text>
+                            <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
+                              {scheduleSelectedCount}명 중 {scheduleSelectedCount}명 선택 완료
+                            </Text>
+                            {/* Progress Bar */}
+                            <View
+                              style={{
+                                height: 6,
+                                backgroundColor: THEME.border,
+                                borderRadius: 3,
+                                marginTop: 8,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <View
+                                style={{
+                                  height: '100%',
+                                  width: `${progressPercent}%`,
+                                  backgroundColor: THEME.scheduleInProgress,
+                                }}
+                              />
+                            </View>
+                          </View>
+                        );
+                      })()}
+
+                      <View style={{ flex: 1, paddingHorizontal: 16 }}>
+                        {/* ScheduleGrid Container */}
+                        <View
+                          style={{
+                            borderWidth: 1,
+                            borderColor: THEME.border,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            marginBottom: 16,
+                            flex: 1,
                           }}
-                          activeRooms={roomList}
-                          onUpdateRoom={fetchRooms}
-                          roomExpiresAt={currentRoom.expires_at}
-                          onRetryCoordination={handleRetryCoordination}
-                          roomId={currentRoom.id}
-                          roomOwner={roomOwnerProfileId || ''}
-                          currentProfileId={globalProfile?.id || ''}
-                        />
+                        >
+                          <ScheduleGrid
+                            meetingDate={currentRoom.meeting_date}
+                            participants={participants}
+                            currentParticipantId={currentParticipant?.id || ''}
+                            onSaveSchedule={handleSaveParticipantSchedule}
+                            isConfirmed={currentRoom.is_confirmed}
+                            confirmedSlot={currentRoom.confirmed_slot}
+                            onConfirmSchedule={(slot) => {
+                              handleConfirmSchedule(slot);
+                              setRoomOverlay(null);
+                            }}
+                            activeRooms={roomList}
+                            onUpdateRoom={fetchRooms}
+                            roomExpiresAt={currentRoom.expires_at}
+                            onRetryCoordination={handleRetryCoordination}
+                            roomId={currentRoom.id}
+                            roomOwner={roomOwnerProfileId || ''}
+                            currentProfileId={globalProfile?.id || ''}
+                          />
+                        </View>
+
+                        {/* Confirmed Time Display */}
+                        {currentRoom.is_confirmed && (
+                          <View
+                            style={{
+                              backgroundColor: THEME.confirmed + '10',
+                              borderLeftWidth: 4,
+                              borderLeftColor: THEME.confirmed,
+                              padding: 12,
+                              borderRadius: 8,
+                              marginBottom: 16,
+                            }}
+                          >
+                            <Text style={{ fontWeight: 'bold', color: THEME.text, fontSize: 14 }}>
+                              ✓ 확정 시간: {currentRoom.confirmed_slot}
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Estimated Cost Display */}
+                        {currentRoom.is_confirmed && (
+                          <View
+                            style={{
+                              backgroundColor: THEME.surface,
+                              borderWidth: 1,
+                              borderColor: THEME.border,
+                              borderRadius: 8,
+                              padding: 12,
+                              marginBottom: 16,
+                            }}
+                          >
+                            <Text style={{ fontSize: 14, color: THEME.textMuted }}>
+                              예상 비용
+                            </Text>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: THEME.text, marginTop: 4 }}>
+                              1인당 ¥12,500
+                            </Text>
+                            <TouchableOpacity
+                              style={{
+                                marginTop: 12,
+                                paddingVertical: 8,
+                                backgroundColor: THEME.menuNeeded,
+                                borderRadius: 8,
+                                alignItems: 'center',
+                              }}
+                              onPress={() => {
+                                setRoomOverlay('dutch');
+                              }}
+                            >
+                              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                                정산 상세 보기
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   )}
