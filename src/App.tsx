@@ -38,6 +38,7 @@ import { usePanResponderSwipeBack } from './lib/usePanResponderSwipeBack';
 import { ProfileSetup } from './components/ProfileSetup';
 import { ScheduleGrid } from './components/ScheduleGrid';
 import { MealChatLogo } from './components/MealChatLogo';
+import { RoomCard } from './components/RoomCard';
 import { calculateAIRecommendations } from './lib/aiRecommender';
 import { MenuRecommendation } from './components/MenuRecommendation';
 import { BaeminSurvey } from './components/BaeminSurvey';
@@ -3173,8 +3174,8 @@ ${inviteLink}
         <View style={styles.headerControls}>
           {activeTab === 'addons' && !currentRoom && !isProfileIncomplete && (
             <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
-              <Plus size={14} color="white" style={{ marginRight: 4 }} />
-              <Text style={styles.createBtnText}>방만들기</Text>
+              <Plus size={16} color="white" style={{ marginRight: 6 }} />
+              <Text style={styles.createBtnText}>새 약속 만들기</Text>
             </TouchableOpacity>
           )}
 
@@ -3610,34 +3611,34 @@ ${inviteLink}
                 ) : roomList.length > 0 ? (
                   <View style={{ gap: 12 }}>
                     {roomList.map(room => {
-                      const isRoomConfirmed = room.is_confirmed;
+                      // Calculate unread count for this room
+                      const roomUnreadCount = appNotifications.filter(notif => notif.room_id === room.id).length;
+
                       return (
-                        <TouchableOpacity
+                        <RoomCard
                           key={room.id}
-                          style={[
-                            styles.roomCard,
-                            isRoomConfirmed ? { borderLeftColor: '#10b981' } : { borderLeftColor: '#23A455' }
-                          ]}
+                          room={room}
+                          unreadCount={roomUnreadCount}
                           onPress={() => {
                             setCurrentRoom(room);
                             setRoomSubTab('schedule');
                           }}
-                        >
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.roomCardTitle}>{room.title}</Text>
-                            <Text style={styles.roomCardMeta}>모임기준일: {getMeetingDateDisplay(room)}</Text>
-
-                            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
-                              {isRoomConfirmed ? (
-                                <Text style={[styles.badge, styles.badgeSuccess]}>확정: {room.confirmed_slot}</Text>
-                              ) : (
-                                <Text style={[styles.badge, styles.badgeInfo]}>일정 조율 중 📅</Text>
-                              )}
-                              <Text style={[styles.badge, styles.badgeWarning]}>코드: {room.code}</Text>
-                            </View>
-                          </View>
-                          <Text style={styles.roomEnterArrow}>입장 ➜</Text>
-                        </TouchableOpacity>
+                          onChatPress={() => {
+                            setCurrentRoom(room);
+                            setRoomSubTab('schedule');
+                            setActiveTab('addons');
+                          }}
+                          onMenuPress={() => {
+                            setCurrentRoom(room);
+                            setRoomOverlay('dutch');
+                            setActiveTab('addons');
+                          }}
+                          onSchedulePress={() => {
+                            setCurrentRoom(room);
+                            setRoomOverlay('schedule');
+                            setActiveTab('addons');
+                          }}
+                        />
                       );
                     })}
                   </View>
@@ -4741,17 +4742,22 @@ const styles = StyleSheet.create({
     gap: 8
   },
   createBtn: {
-    backgroundColor: THEME.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
+    backgroundColor: THEME.menuNeeded,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4
   },
   createBtnText: {
     color: 'white',
-    fontSize: 11,
-    fontWeight: 'bold'
+    fontSize: 12,
+    fontWeight: '600'
   },
   bellBtn: {
     width: 32,
