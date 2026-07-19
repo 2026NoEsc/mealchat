@@ -305,6 +305,7 @@ function AppContent() {
 
   // UI state controllers
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentCreateStep, setCurrentCreateStep] = useState(1);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRoomInfoModal, setShowRoomInfoModal] = useState(false);
   const [isEditingRoomTitle, setIsEditingRoomTitle] = useState(false);
@@ -1559,6 +1560,7 @@ function AppContent() {
         setNewRoomTitle('');
         setNewRoomDate('');
         setCreateRoomSelectedFriends([]);
+        setCurrentCreateStep(1);
         setShowCreateModal(false);
 
         // 방 생성 시에는 device calendar에 저장하지 않음
@@ -4696,128 +4698,258 @@ ${inviteLink}
         </SafeAreaView>
       </Modal>
 
-      {/* Slide-Up Create Room Modal (Manual Room creation in Tab 2) */}
+      {/* Slide-Up Create Room Modal with Step-by-Step Flow */}
       <Modal
         visible={showCreateModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowCreateModal(false)}
+        onRequestClose={() => {
+          setShowCreateModal(false);
+          setCurrentCreateStep(1);
+          setNewRoomTitle('');
+          setNewRoomDate('');
+          setCreateRoomSelectedFriends([]);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { marginBottom: 120, width: '90%', maxWidth: 400, borderRadius: 16 }]}>
-            <Text style={styles.modalTitle}>새 밀챗 방 만들기</Text>
-            
-            <View style={styles.modalFormGroup}>
-              <Text style={styles.modalLabel}>약속 모임 이름</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="예: 삼겹살 번개 모임 🐷"
-                placeholderTextColor={THEME.textMuted}
-                value={newRoomTitle}
-                onChangeText={setNewRoomTitle}
-              />
+            {/* Modal Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: THEME.border,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                새 약속 만들기
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setCurrentCreateStep(1);
+                  setNewRoomTitle('');
+                  setNewRoomDate('');
+                  setCreateRoomSelectedFriends([]);
+                }}
+              >
+                <X size={24} color={THEME.text} />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.modalFormGroup}>
-              <Text style={styles.modalLabel}>친구 초대하기 (선택)</Text>
-              {myFollows.length === 0 ? (
-                <Text style={{ fontSize: 12, color: THEME.textMuted, marginVertical: 4 }}>등록된 친구가 없습니다.</Text>
-              ) : (
-                <ScrollView 
-                  style={{ 
-                    maxHeight: 180, 
-                    borderWidth: 1, 
-                    borderColor: THEME.border, 
-                    borderRadius: 8, 
-                    paddingHorizontal: 12, 
-                    backgroundColor: THEME.background 
+            {/* Step Progress Indicator */}
+            <View style={{ flexDirection: 'row', marginBottom: 16, marginTop: 16, gap: 2 }}>
+              {[1, 2, 3].map(step => (
+                <View
+                  key={step}
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    backgroundColor: step <= currentCreateStep ? THEME.menuNeeded : THEME.border,
+                    borderRadius: 3,
                   }}
-                  nestedScrollEnabled={true}
+                />
+              ))}
+            </View>
+            <Text style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 16 }}>
+              Step {currentCreateStep} / 3
+            </Text>
+
+            {/* Step 1: Appointment Name */}
+            {currentCreateStep === 1 && (
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                  약속 이름
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: THEME.border,
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 14,
+                    color: THEME.text,
+                    marginBottom: 16,
+                  }}
+                  placeholder="예) 회사 팀 점심"
+                  placeholderTextColor={THEME.textMuted}
+                  value={newRoomTitle}
+                  onChangeText={setNewRoomTitle}
+                />
+              </View>
+            )}
+
+            {/* Step 2: Date Selection */}
+            {currentCreateStep === 2 && (
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                  약속 날짜
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    borderWidth: 1,
+                    borderColor: THEME.border,
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 16,
+                  }}
+                  onPress={() => {
+                    // Simple date input - using native date picker would be ideal
+                    // For now, we'll use text input for date selection (YYYY-MM-DD format)
+                    // You can integrate a date picker library here if needed
+                  }}
                 >
-                  {myFollows.map(f => {
-                    const profile = f.profiles;
-                    if (!profile) return null;
-                    const isSelected = createRoomSelectedFriends.includes(f.following_id);
-                    return (
-                      <TouchableOpacity
-                        key={f.id}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          paddingVertical: 10,
-                          borderBottomWidth: 1,
-                          borderBottomColor: THEME.border,
-                          justifyContent: 'space-between'
-                        }}
-                        onPress={() => {
-                          if (isSelected) {
-                            setCreateRoomSelectedFriends(prev => prev.filter(id => id !== f.following_id));
-                          } else {
-                            setCreateRoomSelectedFriends(prev => [...prev, f.following_id]);
-                          }
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <View
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 16,
-                              backgroundColor: profile.avatar_color || THEME.primary,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginRight: 10
-                            }}
-                          >
-                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>
-                              {profile.name.substring(0, 1)}
-                            </Text>
-                          </View>
-                          <View>
-                            <Text style={{ fontSize: 13, fontWeight: '600', color: THEME.text }}>{profile.name}</Text>
-                            <Text style={{ fontSize: 11, color: THEME.textMuted }}>{profile.start_location_name || '위치 미설정'}</Text>
-                          </View>
-                        </View>
-                        <View
+                  <Text style={{ color: newRoomDate ? THEME.text : THEME.textMuted, fontSize: 14 }}>
+                    {newRoomDate || '날짜를 선택해주세요'}
+                  </Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: THEME.border,
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 14,
+                    color: THEME.text,
+                    marginBottom: 16,
+                  }}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={THEME.textMuted}
+                  value={newRoomDate}
+                  onChangeText={setNewRoomDate}
+                />
+              </View>
+            )}
+
+            {/* Step 3: Invite Friends */}
+            {currentCreateStep === 3 && (
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                  친구 초대하기 (선택)
+                </Text>
+                {myFollows.length === 0 ? (
+                  <Text style={{ fontSize: 12, color: THEME.textMuted, marginVertical: 4 }}>
+                    등록된 친구가 없습니다.
+                  </Text>
+                ) : (
+                  <ScrollView
+                    style={{
+                      maxHeight: 300,
+                      marginBottom: 16,
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      backgroundColor: THEME.background,
+                    }}
+                    nestedScrollEnabled={true}
+                  >
+                    {myFollows.map(f => {
+                      const profile = f.profiles;
+                      if (!profile) return null;
+                      const isSelected = createRoomSelectedFriends.includes(f.following_id);
+                      return (
+                        <TouchableOpacity
+                          key={f.id}
                           style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 10,
-                            borderWidth: 2,
-                            borderColor: isSelected ? THEME.primary : '#cbd5e1',
-                            backgroundColor: isSelected ? THEME.primary : 'transparent',
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            paddingVertical: 8,
+                            borderBottomWidth: 1,
+                            borderBottomColor: THEME.border,
+                          }}
+                          onPress={() => {
+                            if (isSelected) {
+                              setCreateRoomSelectedFriends(prev =>
+                                prev.filter(id => id !== f.following_id)
+                              );
+                            } else {
+                              setCreateRoomSelectedFriends(prev => [...prev, f.following_id]);
+                            }
                           }}
                         >
-                          {isSelected && <Check size={12} color="white" />}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              )}
-            </View>
+                          <View
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderWidth: 2,
+                              borderColor: isSelected ? THEME.menuNeeded : THEME.border,
+                              borderRadius: 4,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              marginRight: 12,
+                            }}
+                          >
+                            {isSelected && <Check size={16} color={THEME.menuNeeded} />}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: THEME.text }}>
+                              {profile.name}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </View>
+            )}
 
-            <View style={styles.modalBtnRow}>
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={() => setShowCreateModal(false)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  backgroundColor: THEME.border,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                onPress={() => {
+                  if (currentCreateStep === 1) {
+                    setShowCreateModal(false);
+                    setCurrentCreateStep(1);
+                    setNewRoomTitle('');
+                    setNewRoomDate('');
+                    setCreateRoomSelectedFriends([]);
+                  } else {
+                    setCurrentCreateStep(currentCreateStep - 1);
+                  }
+                }}
               >
-                <Text style={styles.modalBtnCancelText}>취소</Text>
+                <Text style={{ color: THEME.text, fontWeight: 'bold' }}>
+                  {currentCreateStep === 1 ? '취소' : '이전'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnSubmit]}
-                onPress={handleCreateRoom}
-                disabled={loading}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  backgroundColor: THEME.menuNeeded,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                onPress={() => {
+                  if (currentCreateStep === 3) {
+                    handleCreateRoom();
+                  } else {
+                    setCurrentCreateStep(currentCreateStep + 1);
+                  }
+                }}
+                disabled={loading || (currentCreateStep === 1 && !newRoomTitle.trim())}
               >
-                <Text style={styles.modalBtnSubmitText}>방 개설 완료 🎉</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                  {currentCreateStep === 3 ? '만들기' : '다음'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        </Modal>
+      </Modal>
 
         {/* AI Recommendations Modal */}
         <Modal
