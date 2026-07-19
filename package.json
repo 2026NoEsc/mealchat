@@ -1,0 +1,46 @@
+{
+  "name": "bobyak-app",
+  "private": true,
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "tunnel": "expo start --tunnel",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "ts:check": "tsc",
+    "build:android:dev": "eas build --platform android --profile development",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:android:all": "eas build --platform android --profile development --wait",
+    "build:ios:all": "eas build --platform ios --profile development --wait",
+    "submit": "eas submit --platform android --latest --wait && eas submit --platform ios --latest --wait"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "expo": "~54.0.3",
+    "expo-calendar": "~15.0.8",
+    "expo-dev-client": "^57.0.5",
+    "expo-image-manipulator": "^57.0.2",
+    "expo-image-picker": "~17.0.11",
+    "expo-location": "~19.0.8",
+    "expo-notifications": "^0.32.17",
+    "expo-status-bar": "~3.0.9",
+    "lucide-react-native": "^0.300.0",
+    "prop-types": "^15.8.1",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-maps": "1.20.1",
+    "react-native-svg": "^15.12.1",
+    "react-native-webview": "13.15.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@expo/ngrok": "^4.1.0",
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
+}

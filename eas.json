@@ -1,0 +1,43 @@
+{
+  "build": {
+    "development": {
+      "android": {
+        "distribution": "internal",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "distribution": "internal"
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "android": {
+        "distribution": "internal"
+      },
+      "ios": {
+        "distribution": "internal"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "android": {
+        "distribution": "store"
+      },
+      "ios": {
+        "distribution": "store"
+      },
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "YOUR_ASC_APP_ID"
+      },
+      "android": {
+        "googleServiceAccountKeyPath": "./google-service-account-key.json",
+        "track": "internal"
+      }
+    }
+  }
+}

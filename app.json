@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "밀챗",
+    "slug": "mealchat-app",
+    "scheme": "mealchat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-dev-client",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "밀챗 약속 조율을 위해 디바이스 캘린더 접근 권한이 필요합니다."
+        }
+      ],
+      "expo-image-picker",
+      "expo-location",
+      "expo-notifications"
+    ],
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 30000
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mealchat.app",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "밀챗 약속 조율을 위해 디바이스 캘린더 접근 권한이 필요합니다.",
+        "NSLocationWhenInUseUsageDescription": "밀챗 위치 기반 기능을 위해 위치 권한이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "영수증 사진 업로드를 위해 사진 라이브러리 접근 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
+    },
+    "android": {
+      "package": "com.mealchat.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./public/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "usesCleartextTraffic": false
+    },
+    "web": {
+      "favicon": "./public/favicon.ico"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d3db2e15-a271-4782-a152-a3911a01177b"
+      }
+    }
+  }
+}

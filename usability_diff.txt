@@ -1,0 +1,1978 @@
+﻿commit 8bad03f3701a0fb6c01a758f1fef1ec7a42b6d07
+Author: needarest <lee1023jm@gmail.com>
+Date:   Thu Jun 25 10:19:44 2026 +0900
+
+    feat: improve room scheduling, calendar synchronization, and UI usability
+
+diff --git a/app/(tabs)/_layout.tsx b/app/(tabs)/_layout.tsx
+index 81be9e7..1c82a1f 100644
+--- a/app/(tabs)/_layout.tsx
++++ b/app/(tabs)/_layout.tsx
+@@ -7,29 +7,8 @@ export default function TabLayout() {
+   return (
+     <Tabs
+       screenOptions={{
+-        tabBarActiveTintColor: '#869B60', // Olive point color
+-        tabBarInactiveTintColor: '#7F7F7F',
+-        tabBarStyle: {
+-          backgroundColor: '#F4F3EA', // Beige background
+-          borderTopWidth: 1,
+-          borderTopColor: 'rgba(0, 0, 0, 0.08)',
+-          paddingTop: 5,
+-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+-          height: Platform.OS === 'ios' ? 88 : 64,
+-        },
+-        headerStyle: {
+-          backgroundColor: '#F4F3EA', // Beige background
+-          shadowColor: 'transparent',
+-          elevation: 0,
+-          borderBottomWidth: 1,
+-          borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+-        },
+-        headerTitleStyle: {
+-          color: '#1E293B', // Dark charcoal text
+-          fontWeight: '700',
+-          fontSize: 18,
+-        },
+-        headerTitleAlign: 'center',
++        headerShown: false,
++        tabBarStyle: { display: 'none' },
+       }}
+     >
+       <Tabs.Screen
+diff --git a/app/(tabs)/index.tsx b/app/(tabs)/index.tsx
+index 123bb8f..232a93a 100644
+--- a/app/(tabs)/index.tsx
++++ b/app/(tabs)/index.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState, useCallback, useRef } from 'react';
++import React, { useState, useCallback, useRef, useEffect } from 'react';
+ import {
+   StyleSheet,
+   Text,
+@@ -10,18 +10,42 @@ import {
+   ActivityIndicator,
+   PanResponder,
+   GestureResponderEvent,
++  Dimensions,
++  ScrollView,
++  Switch,
++  Platform,
++  Animated,
+ } from 'react-native';
+ import { useFocusEffect } from 'expo-router';
+ import { calendarService } from '@/src/services/CalendarService';
+-import { CalendarDayEvents } from '@/src/types';
++import { CalendarDayEvents, CalendarEventDetail } from '@/src/types';
+ import { CalendarModal } from '@/src/components/CalendarModal';
+ import { Ionicons } from '@expo/vector-icons';
+ import * as Haptics from 'expo-haptics';
++import RoomsScreen from './rooms';
++import ProfileScreen from './profile';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import AsyncStorage from '@react-native-async-storage/async-storage';
++
++const { width: SCREEN_WIDTH } = Dimensions.get('window');
+ 
+ export default function CalendarScreen() {
+   const [events, setEvents] = useState<CalendarDayEvents>({});
+   const [loading, setLoading] = useState(true);
+   const [syncing, setSyncing] = useState(false);
++
++  const [activeTab, setActiveTab] = useState(0);
++  const scrollViewRef = useRef<ScrollView>(null);
++  const insets = useSafeAreaInsets();
++  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
++
++  const fadeAnim = useRef(new Animated.Value(1)).current;
++  const translateYAnim = useRef(new Animated.Value(0)).current;
++
++  // Touch handler refs to solve React Native PanResponder closure capture bugs
++  const handleTouchStartRef = useRef<any>(null);
++  const handleTouchMoveRef = useRef<any>(null);
++  const handleTouchEndRef = useRef<any>(null);
+   
+   // 4媛쒖썡 踰붿쐞 怨꾩궛
+   const activeMonths = useCallback(() => {
+@@ -49,6 +73,15 @@ export default function CalendarScreen() {
+     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+   });
+   const [selectedDateSlots, setSelectedDateSlots] = useState<boolean[]>(Array(24).fill(false));
++  const [selectedDateDetails, setSelectedDateDetails] = useState<CalendarEventDetail[]>([]);
++
++  useEffect(() => {
++    const loadDetails = async () => {
++      const details = await calendarService.getEventDetails(selectedDateStr);
++      setSelectedDateDetails(details);
++    };
++    loadDetails();
++  }, [selectedDateStr, events]);
+ 
+   // ?ㅼ쨷 ?좎쭨 ?쒕옒洹??좏깮 ?쒖뒪泥??곹깭
+   const [isDragSelecting, setIsDragSelecting] = useState(false);
+@@ -72,7 +105,7 @@ export default function CalendarScreen() {
+     }, [])
+   );
+ 
+-  // ?붾컮?댁뒪 濡쒖뺄 罹섎┛???숆린???ㅽ뻾
++  // ?붾컮?댁뒪 濡쒖뺄 罹섎┛???숆린???ㅽ뻾 (?먮룞 ?곕룞 ?좉? 諛?利됱떆 ?곕룞 ?⑸룄)
+   const handleSyncCalendar = async () => {
+     try {
+       setSyncing(true);
+@@ -87,6 +120,121 @@ export default function CalendarScreen() {
+     }
+   };
+ 
++  // ?먮룞 ?곕룞 ?ㅼ젙 濡쒕뱶 諛???援щ룞 ???먮룞 ?숆린???ㅽ뻾
++  useEffect(() => {
++    const loadAutoSyncSetting = async () => {
++      try {
++        const value = await AsyncStorage.getItem('@meety_calendar_sync_enabled');
++        const isEnabled = value === 'true';
++        setAutoSyncEnabled(isEnabled);
++        
++        if (isEnabled) {
++          setSyncing(true);
++          const syncedEvents = await calendarService.syncDeviceCalendar();
++          setEvents(syncedEvents);
++        }
++      } catch (e) {
++        console.error('Failed to load auto sync setting or perform auto-sync', e);
++      } finally {
++        setSyncing(false);
++      }
++    };
++    loadAutoSyncSetting();
++  }, []);
++
++  const handleToggleAutoSync = async (value: boolean) => {
++    try {
++      setAutoSyncEnabled(value);
++      await AsyncStorage.setItem('@meety_calendar_sync_enabled', String(value));
++      
++      if (value) {
++        setSyncing(true);
++        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
++        const syncedEvents = await calendarService.syncDeviceCalendar();
++        setEvents(syncedEvents);
++        Vibration.vibrate(100);
++      }
++    } catch (e) {
++      console.error('Failed to toggle auto sync', e);
++    } finally {
++      setSyncing(false);
++    }
++  };
++
++  // 媛濡??ㅼ??댄봽 ?ㅽ겕濡??몃뱾??+  const handleScroll = (event: any) => {
++    const contentOffsetX = event.nativeEvent.contentOffset.x;
++    const index = Math.round(contentOffsetX / SCREEN_WIDTH);
++    if (index !== activeTab && index >= 0 && index <= 2) {
++      setActiveTab(index);
++    }
++  };
++
++  // ??컮 ?대┃ ???꾪솚
++  const scrollToTab = (index: number) => {
++    scrollViewRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
++    setActiveTab(index);
++    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++  };
++
++  // 罹섎┛?????꾪솚 ?щ씪?대뵫/?섏씠???좊땲硫붿씠???⑥닔
++  const animateMonthTransition = (newMonth: any, direction: 'up' | 'down') => {
++    const slideOutValue = direction === 'up' ? -150 : 150;
++    const slideInStartValue = direction === 'up' ? 150 : -150;
++
++    Animated.parallel([
++      Animated.timing(fadeAnim, {
++        toValue: 0,
++        duration: 150,
++        useNativeDriver: true,
++      }),
++      Animated.timing(translateYAnim, {
++        toValue: slideOutValue,
++        duration: 150,
++        useNativeDriver: true,
++      })
++    ]).start(() => {
++      setSelectedMonth(newMonth);
++      translateYAnim.setValue(slideInStartValue);
++
++      Animated.parallel([
++        Animated.timing(fadeAnim, {
++          toValue: 1,
++          duration: 200,
++          useNativeDriver: true,
++        }),
++        Animated.timing(translateYAnim, {
++          toValue: 0,
++          duration: 200,
++          useNativeDriver: true,
++        })
++      ]).start();
++    });
++  };
++
++  // ?곷떒 ?????좏깮 ???좊땲硫붿씠???곸슜
++  const handleSelectMonth = (m: any) => {
++    const currentIndex = monthsList.findIndex(item => item.key === selectedMonth.key);
++    const newIndex = monthsList.findIndex(item => item.key === m.key);
++    if (newIndex === currentIndex) return;
++    
++    const direction = newIndex > currentIndex ? 'up' : 'down';
++    animateMonthTransition(m, direction);
++    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++  };
++
++  // ?곹븯 ?ㅼ??댄봽瑜??듯븳 罹섎┛?????대룞
++  const handleMonthSwipe = (direction: 'up' | 'down') => {
++    const currentIndex = monthsList.findIndex(m => m.key === selectedMonth.key);
++    if (direction === 'up' && currentIndex < monthsList.length - 1) {
++      animateMonthTransition(monthsList[currentIndex + 1], 'up');
++      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++    } else if (direction === 'down' && currentIndex > 0) {
++      animateMonthTransition(monthsList[currentIndex - 1], 'down');
++      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++    }
++  };
++
+   const { year, month } = selectedMonth;
+   const daysInMonth = new Date(year, month, 0).getDate();
+   const firstDayIndex = new Date(year, month - 1, 1).getDay();
+@@ -98,6 +246,7 @@ export default function CalendarScreen() {
+     if (isDragSelecting) return;
+     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+     setSelectedDateStr(dateStr);
++    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+   };
+ 
+   const handleOpenEditModal = () => {
+@@ -146,10 +295,16 @@ export default function CalendarScreen() {
+   const getDayFromCoords = (x: number, y: number): number | null => {
+     if (gridLayout.width === 0 || gridLayout.height === 0) return null;
+     
+-    const colWidth = gridLayout.width / 7;
++    const padding = 10;
++    const gridWidth = gridLayout.width - (padding * 2);
++    const adjustedX = x - padding;
++    
++    if (adjustedX < 0 || adjustedX > gridWidth) return null;
++    
++    const colWidth = gridWidth / 7;
+     const rowHeight = gridLayout.height / 6; // 6??怨좎젙
+     
+-    const col = Math.floor(x / colWidth);
++    const col = Math.floor(adjustedX / colWidth);
+     const row = Math.floor(y / rowHeight);
+     
+     if (col >= 0 && col < 7 && row >= 0 && row < 6) {
+@@ -219,11 +374,27 @@ export default function CalendarScreen() {
+   };
+ 
+   // ?쒖뒪泥??댁젣 (Touch End)
+-  const handleTouchEnd = async (e: GestureResponderEvent) => {
++  const handleTouchEnd = async (e: GestureResponderEvent, gestureState: any) => {
+     if (longPressTimerRef.current) {
+       clearTimeout(longPressTimerRef.current);
+     }
+ 
++    // Y異??곹븯 ?ㅼ??댄봽 媛먯? (dy > 60, vy > 0.3)
++    const isSwipeY = Math.abs(gestureState.dy) > 60 && Math.abs(gestureState.vy) > 0.3;
++    if (isSwipeY) {
++      if (gestureState.dy < 0) {
++        handleMonthSwipe('up');
++      } else {
++        handleMonthSwipe('down');
++      }
++      setIsDragSelecting(false);
++      setDragSelectedDays([]);
++      isLongPressedRef.current = false;
++      lastSelectedDayRef.current = null;
++      setLoading(false);
++      return;
++    }
++
+     if (isLongPressedRef.current && dragSelectedDays.length > 0) {
+       // ?쒕옒洹몃줈 ?좏깮??紐⑤뱺 ?좎쭨?ㅼ쓽 ?쇱젙???쇨큵 ?좉? (醫낆씪 ?쇱젙 ?쒖꽦??鍮꾪솢?깊솕)
+       setLoading(true);
+@@ -269,10 +440,18 @@ export default function CalendarScreen() {
+     PanResponder.create({
+       onStartShouldSetPanResponder: () => true,
+       onMoveShouldSetPanResponder: () => true,
+-      onPanResponderGrant: handleTouchStart,
+-      onPanResponderMove: handleTouchMove,
+-      onPanResponderRelease: handleTouchEnd,
+-      onPanResponderTerminate: handleTouchEnd,
++      onPanResponderGrant: (e, gestureState) => {
++        handleTouchStartRef.current?.(e);
++      },
++      onPanResponderMove: (e, gestureState) => {
++        handleTouchMoveRef.current?.(e);
++      },
++      onPanResponderRelease: (e, gestureState) => {
++        handleTouchEndRef.current?.(e, gestureState);
++      },
++      onPanResponderTerminate: (e, gestureState) => {
++        handleTouchEndRef.current?.(e, gestureState);
++      },
+     })
+   ).current;
+ 
+@@ -308,27 +487,35 @@ export default function CalendarScreen() {
+         today.getMonth() + 1 === month &&
+         today.getDate() === day;
+ 
++      const cellStyle: any[] = [styles.cell];
++      if (isToday) cellStyle.push(styles.cellToday);
++      if (isAllDay) cellStyle.push(styles.cellAllDay);
++      if (isDragSelected) cellStyle.push(styles.cellDragSelected);
++      if (isSelected) {
++        cellStyle.push(styles.cellSelected);
++        if (isAllDay) {
++          cellStyle.push({ backgroundColor: '#6366F1' }); // ?섎（醫낆씪 諛붿걶 ???寃쎌슦 ?뚮???諛곌꼍 蹂댁〈
++        }
++      }
++
++      const cellTextStyle: any[] = [styles.cellText];
++      if (isToday) cellTextStyle.push(styles.cellTextToday);
++      if (isAllDay) cellTextStyle.push(styles.cellTextAllDay);
++      if (isDragSelected) cellTextStyle.push(styles.cellTextDragSelected);
++      if (isSelected) {
++        cellTextStyle.push(styles.cellTextSelected);
++        if (isAllDay) {
++          cellTextStyle.push({ color: '#FFFFFF' }); // ?섎（醫낆씪 諛붿걶 ???寃쎌슦 ?곗깋 湲??蹂댁〈
++        }
++      }
++
+       cells.push(
+         <View
+           key={`day-${day}`}
+-          style={[
+-            styles.cell,
+-            isToday && styles.cellToday,
+-            isAllDay && styles.cellAllDay,
+-            isDragSelected && styles.cellDragSelected,
+-            isSelected && styles.cellSelected,
+-          ]}
++          style={cellStyle}
+           pointerEvents="none" // 遺紐?PanResponder媛 吏곸젒 醫뚰몴瑜??띾뱷?섎룄濡???         >
+-          <Text
+-            style={[
+-              styles.cellText,
+-              isToday && styles.cellTextToday,
+-              isAllDay && styles.cellTextAllDay,
+-              isDragSelected && styles.cellTextDragSelected,
+-              isSelected && styles.cellTextSelected,
+-            ]}
+-          >
++          <Text style={cellTextStyle}>
+             {day}
+           </Text>
+           {hasEvent && !isAllDay && (
+@@ -351,140 +538,209 @@ export default function CalendarScreen() {
+     return cells;
+   };
+ 
++  // 留??뚮뜑留곷쭏??理쒖떊 ?대깽???몃뱾??李몄“瑜?refs??媛깆떊 (PanResponder ?대줈? 臾몄젣 ?닿껐)
++  useEffect(() => {
++    handleTouchStartRef.current = handleTouchStart;
++    handleTouchMoveRef.current = handleTouchMove;
++    handleTouchEndRef.current = handleTouchEnd;
++  });
++
++  const renderHeader = () => {
++    const titles = ['罹섎┛??, '?쎌냽諛?& 移쒓뎄', '?꾨줈??];
++    return (
++      <View style={[styles.headerContainer, { height: 56 + insets.top, paddingTop: insets.top }]}>
++        <Text style={styles.headerTitle}>{titles[activeTab]}</Text>
++        {activeTab === 0 && (
++          <View style={[styles.headerRight, { paddingTop: insets.top }]}>
++            {syncing && <ActivityIndicator size="small" color="#869B60" style={{ marginRight: 6 }} />}
++            <Text style={styles.autoSyncLabel}>?먮룞 ?곕룞</Text>
++            <Switch
++              value={autoSyncEnabled}
++              onValueChange={handleToggleAutoSync}
++              trackColor={{ false: '#CBD5E1', true: '#869B60' }}
++              thumbColor={autoSyncEnabled ? '#FFFFFF' : '#F4F3EA'}
++              style={{ transform: Platform.OS === 'ios' ? [{ scaleX: 0.8 }, { scaleY: 0.8 }] : [] }}
++            />
++          </View>
++        )}
++      </View>
++    );
++  };
++
++  const renderCustomTabBar = () => {
++    return (
++      <View style={[styles.customTabBar, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8 }]}>
++        <TouchableOpacity onPress={() => scrollToTab(0)} style={styles.tabBarItem} activeOpacity={0.7}>
++          <Ionicons name={activeTab === 0 ? "calendar" : "calendar-outline"} size={22} color={activeTab === 0 ? "#869B60" : "#7F7F7F"} />
++          <Text style={[styles.tabBarText, activeTab === 0 && styles.tabBarTextActive]}>罹섎┛??/Text>
++        </TouchableOpacity>
++        <TouchableOpacity onPress={() => scrollToTab(1)} style={styles.tabBarItem} activeOpacity={0.7}>
++          <Ionicons name={activeTab === 1 ? "people" : "people-outline"} size={22} color={activeTab === 1 ? "#869B60" : "#7F7F7F"} />
++          <Text style={[styles.tabBarText, activeTab === 1 && styles.tabBarTextActive]}>?쎌냽諛?& 移쒓뎄</Text>
++        </TouchableOpacity>
++        <TouchableOpacity onPress={() => scrollToTab(2)} style={styles.tabBarItem} activeOpacity={0.7}>
++          <Ionicons name={activeTab === 2 ? "person" : "person-outline"} size={22} color={activeTab === 2 ? "#869B60" : "#7F7F7F"} />
++          <Text style={[styles.tabBarText, activeTab === 2 && styles.tabBarTextActive]}>?꾨줈??/Text>
++        </TouchableOpacity>
++      </View>
++    );
++  };
++
+   return (
+-    <SafeAreaView style={styles.safeArea}>
++    <View style={styles.mainContainer}>
+       <StatusBar barStyle="dark-content" />
++      {renderHeader()}
+       
+-      {/* 罹섎┛???곕룞 ?곷떒 諛?*/}
+-      <View style={styles.syncHeader}>
+-        <View style={styles.infoBanner}>
+-          <Ionicons name="information-circle-outline" size={15} color="#869B60" />
+-          <Text style={styles.infoBannerText}>
+-            ?좎쭨 袁??꾨Ⅴ怨??쒕옒洹명븯??<Text style={styles.bold}>?щ윭??醫낆씪 ?ㅼ젙</Text>
+-          </Text>
+-        </View>
+-        <TouchableOpacity
+-          style={styles.syncButton}
+-          onPress={handleSyncCalendar}
+-          disabled={syncing}
+-          activeOpacity={0.7}
+-        >
+-          {syncing ? (
+-            <ActivityIndicator size="small" color="#FFFFFF" />
++      <ScrollView
++        ref={scrollViewRef}
++        horizontal
++        pagingEnabled
++        showsHorizontalScrollIndicator={false}
++        onScroll={handleScroll}
++        scrollEventThrottle={16}
++        style={styles.pager}
++      >
++        {/* Tab 0: Calendar */}
++        <View style={{ width: SCREEN_WIDTH, flex: 1, backgroundColor: '#F4F3EA' }}>
++          {/* 罹섎┛???덈궡 諛?*/}
++          <View style={styles.syncHeader}>
++            <View style={styles.infoBanner}>
++              <Ionicons name="information-circle-outline" size={15} color="#869B60" />
++              <Text style={styles.infoBannerText}>
++                ?좎쭨 袁??꾨Ⅴ怨??쒕옒洹명븯??<Text style={styles.bold}>?щ윭??醫낆씪 ?ㅼ젙</Text>
++              </Text>
++            </View>
++          </View>
++
++          {/* 4媛쒖썡 ??*/}
++          <View style={styles.tabContainer}>
++            {monthsList.map((m) => {
++              const isSelected = selectedMonth.key === m.key;
++              return (
++                <TouchableOpacity
++                  key={m.key}
++                  style={[styles.tabItem, isSelected && styles.tabItemActive]}
++                  onPress={() => handleSelectMonth(m)}
++                  activeOpacity={0.8}
++                >
++                  <Text style={[styles.tabLabel, isSelected && styles.tabLabelActive]}>
++                    {m.label}
++                  </Text>
++                  {isSelected && <View style={styles.tabIndicator} />}
++                </TouchableOpacity>
++              );
++            })}
++          </View>
++
++          {/* ?붿씪 ?ㅻ뜑 */}
++          <View style={styles.weekHeader}>
++            {['??, '??, '??, '??, '紐?, '湲?, '??].map((day, index) => (
++              <Text
++                key={day}
++                style={[
++                  styles.weekText,
++                  index === 0 && styles.weekSunday,
++                  index === 6 && styles.weekSaturday,
++                ]}
++              >
++                {day}
++              </Text>
++            ))}
++          </View>
++
++          {/* ?щ젰 ?좎쭨 洹몃━??(?쒖뒪泥?媛먯?) */}
++          {loading && !syncing ? (
++            <View style={styles.loaderContainer}>
++              <ActivityIndicator size="large" color="#869B60" />
++            </View>
+           ) : (
+-            <View style={styles.syncButtonContent}>
+-              <Ionicons name="sync" size={14} color="#FFFFFF" />
+-              <Text style={styles.syncButtonText}>罹섎┛???곕룞</Text>
++            <View 
++              style={styles.calendarContainer}
++              onLayout={(e) => {
++                const { width, height } = e.nativeEvent.layout;
++                setGridLayout({ width, height });
++              }}
++              {...panResponder.panHandlers}
++            >
++              <Animated.View style={[styles.calendarGrid, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
++                {renderCalendarCells()}
++              </Animated.View>
+             </View>
+           )}
+-        </TouchableOpacity>
+-      </View>
+ 
+-      {/* 4媛쒖썡 ??*/}
+-      <View style={styles.tabContainer}>
+-        {monthsList.map((m) => {
+-          const isSelected = selectedMonth.key === m.key;
+-          return (
+-            <TouchableOpacity
+-              key={m.key}
+-              style={[styles.tabItem, isSelected && styles.tabItemActive]}
+-              onPress={() => setSelectedMonth(m)}
+-              activeOpacity={0.8}
+-            >
+-              <Text style={[styles.tabLabel, isSelected && styles.tabLabelActive]}>
+-                {m.label}
+-              </Text>
+-              {isSelected && <View style={styles.tabIndicator} />}
+-            </TouchableOpacity>
+-          );
+-        })}
+-      </View>
++          {/* 罹섎┛??踰붾? */}
++          <View style={styles.legendContainer}>
++            <View style={styles.legendItem}>
++              <View style={[styles.legendIndicator, styles.legendDot]} />
++              <Text style={styles.legendText}>?쒓컙??諛붿겏</Text>
++            </View>
++            <View style={styles.legendItem}>
++              <View style={[styles.legendIndicator, styles.legendAllDay]} />
++              <Text style={styles.legendText}>?섎（ 醫낆씪 諛붿겏</Text>
++            </View>
++            <View style={styles.legendItem}>
++              <View style={[styles.legendIndicator, styles.legendToday]} />
++              <Text style={styles.legendText}>?좏깮??/ ?ㅻ뒛</Text>
++            </View>
++          </View>
+ 
+-      {/* ?붿씪 ?ㅻ뜑 */}
+-      <View style={styles.weekHeader}>
+-        {['??, '??, '??, '??, '紐?, '湲?, '??].map((day, index) => (
+-          <Text
+-            key={day}
+-            style={[
+-              styles.weekText,
+-              index === 0 && styles.weekSunday,
+-              index === 6 && styles.weekSaturday,
+-            ]}
+-          >
+-            {day}
+-          </Text>
+-        ))}
+-      </View>
++          {/* ?좏깮???좎쭨???쇱젙 ?붿빟 移대뱶 */}
++          <View style={styles.summaryCard}>
++            <View style={styles.summaryHeader}>
++              <View style={styles.summaryDateRow}>
++                <Ionicons name="calendar-outline" size={18} color="#869B60" />
++                <Text style={styles.summaryDateText}>
++                  {selectedDateStr ? `${selectedDateStr.split('-')[1]}??${selectedDateStr.split('-')[2]}???쇱젙` : '?좏깮???좎쭨'}
++                </Text>
++              </View>
++              <TouchableOpacity
++                style={styles.editButton}
++                onPress={handleOpenEditModal}
++                activeOpacity={0.7}
++              >
++                <Ionicons name="create-outline" size={16} color="#869B60" />
++                <Text style={styles.editButtonText}>?쒓컙 ?섏젙</Text>
++              </TouchableOpacity>
++            </View>
+ 
+-      {/* ?щ젰 ?좎쭨 洹몃━??(?쒖뒪泥?媛먯?) */}
+-      {loading && !syncing ? (
+-        <View style={styles.loaderContainer}>
+-          <ActivityIndicator size="large" color="#869B60" />
+-        </View>
+-      ) : (
+-        <View 
+-          style={styles.calendarContainer}
+-          onLayout={(e) => {
+-            const { width, height } = e.nativeEvent.layout;
+-            setGridLayout({ width, height });
+-          }}
+-          {...panResponder.panHandlers}
+-        >
+-          <View style={styles.calendarGrid}>
+-            {renderCalendarCells()}
++            <View style={styles.summaryContent}>
++              {selectedDateDetails.length > 0 ? (
++                <View style={styles.chipContainer}>
++                  {selectedDateDetails.map((event, index) => {
++                    const timeStr = event.isAllDay 
++                      ? '?섎（ 醫낆씪' 
++                      : (event.startTimeStr && event.endTimeStr 
++                        ? `${event.startTimeStr} ~ ${event.endTimeStr}` 
++                        : `${String(event.startHour).padStart(2, '0')}:00 ~ ${String(event.endHour).padStart(2, '0')}:00`);
++                    return (
++                      <View key={event.id || index} style={styles.timeChip}>
++                        <Text style={styles.timeChipText}>
++                          {event.title} ({timeStr})
++                        </Text>
++                      </View>
++                    );
++                  })}
++                </View>
++              ) : (
++                <Text style={styles.noEventsText}>?쇱젙???놁뒿?덈떎.</Text>
++              )}
++            </View>
+           </View>
+         </View>
+-      )}
+ 
+-      {/* 罹섎┛??踰붾? */}
+-      <View style={styles.legendContainer}>
+-        <View style={styles.legendItem}>
+-          <View style={[styles.legendIndicator, styles.legendDot]} />
+-          <Text style={styles.legendText}>?쒓컙??諛붿겏</Text>
+-        </View>
+-        <View style={styles.legendItem}>
+-          <View style={[styles.legendIndicator, styles.legendAllDay]} />
+-          <Text style={styles.legendText}>?섎（ 醫낆씪 諛붿겏</Text>
++        {/* Tab 1: Rooms */}
++        <View style={{ width: SCREEN_WIDTH, flex: 1, backgroundColor: '#F4F3EA' }}>
++          <RoomsScreen />
+         </View>
+-        <View style={styles.legendItem}>
+-          <View style={[styles.legendIndicator, styles.legendToday]} />
+-          <Text style={styles.legendText}>?좏깮??/ ?ㅻ뒛</Text>
+-        </View>
+-      </View>
+ 
+-      {/* ?좏깮???좎쭨???쇱젙 ?붿빟 移대뱶 */}
+-      <View style={styles.summaryCard}>
+-        <View style={styles.summaryHeader}>
+-          <View style={styles.summaryDateRow}>
+-            <Ionicons name="calendar-outline" size={18} color="#869B60" />
+-            <Text style={styles.summaryDateText}>
+-              {selectedDateStr ? `${selectedDateStr.split('-')[1]}??${selectedDateStr.split('-')[2]}???쇱젙` : '?좏깮???좎쭨'}
+-            </Text>
+-          </View>
+-          <TouchableOpacity
+-            style={styles.editButton}
+-            onPress={handleOpenEditModal}
+-            activeOpacity={0.7}
+-          >
+-            <Ionicons name="create-outline" size={16} color="#869B60" />
+-            <Text style={styles.editButtonText}>?쒓컙 ?섏젙</Text>
+-          </TouchableOpacity>
++        {/* Tab 2: Profile */}
++        <View style={{ width: SCREEN_WIDTH, flex: 1, backgroundColor: '#F4F3EA' }}>
++          <ProfileScreen />
+         </View>
++      </ScrollView>
+ 
+-        <View style={styles.summaryContent}>
+-          {getMergedTimeSlots(events[selectedDateStr]).length > 0 ? (
+-            <View style={styles.chipContainer}>
+-              {getMergedTimeSlots(events[selectedDateStr]).map((timeRange, index) => (
+-                <View key={index} style={styles.timeChip}>
+-                  <Text style={styles.timeChipText}>{timeRange}</Text>
+-                </View>
+-              ))}
+-            </View>
+-          ) : (
+-            <Text style={styles.noEventsText}>?쇱젙???놁뒿?덈떎.</Text>
+-          )}
+-        </View>
+-      </View>
++      {/* Custom Bottom Tab Bar */}
++      {renderCustomTabBar()}
+ 
+       {/* ?쒓컙蹂??몃? 紐⑤떖 */}
+       <CalendarModal
+@@ -494,11 +750,68 @@ export default function CalendarScreen() {
+         onClose={() => setModalVisible(false)}
+         onSave={handleSaveSlots}
+       />
+-    </SafeAreaView>
++    </View>
+   );
+ }
+ 
+ const styles = StyleSheet.create({
++  mainContainer: {
++    flex: 1,
++    backgroundColor: '#F4F3EA',
++  },
++  pager: {
++    flex: 1,
++  },
++  headerContainer: {
++    backgroundColor: '#F4F3EA',
++    borderBottomWidth: 1,
++    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
++    flexDirection: 'row',
++    alignItems: 'center',
++    justifyContent: 'center',
++    position: 'relative',
++  },
++  headerTitle: {
++    color: '#1E293B',
++    fontWeight: '700',
++    fontSize: 18,
++  },
++  headerRight: {
++    position: 'absolute',
++    right: 16,
++    flexDirection: 'row',
++    alignItems: 'center',
++  },
++  autoSyncLabel: {
++    fontSize: 12,
++    fontWeight: '600',
++    color: '#475569',
++    marginRight: 6,
++  },
++  customTabBar: {
++    flexDirection: 'row',
++    backgroundColor: '#F4F3EA',
++    borderTopWidth: 1,
++    borderTopColor: 'rgba(0, 0, 0, 0.08)',
++    paddingTop: 8,
++    justifyContent: 'space-around',
++    alignItems: 'center',
++  },
++  tabBarItem: {
++    flex: 1,
++    alignItems: 'center',
++    justifyContent: 'center',
++    gap: 3,
++  },
++  tabBarText: {
++    fontSize: 10,
++    fontWeight: '600',
++    color: '#7F7F7F',
++  },
++  tabBarTextActive: {
++    color: '#869B60',
++    fontWeight: '700',
++  },
+   safeArea: {
+     flex: 1,
+     backgroundColor: '#F4F3EA',
+diff --git a/app/(tabs)/rooms.tsx b/app/(tabs)/rooms.tsx
+index f3c9095..0ca7bca 100644
+--- a/app/(tabs)/rooms.tsx
++++ b/app/(tabs)/rooms.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState, useCallback } from 'react';
++import React, { useState, useCallback, useEffect } from 'react';
+ import {
+   StyleSheet,
+   Text,
+@@ -13,6 +13,7 @@ import {
+   StatusBar,
+   Clipboard,
+ } from 'react-native';
++import AsyncStorage from '@react-native-async-storage/async-storage';
+ import { useFocusEffect, router } from 'expo-router';
+ import { authService } from '@/src/services/AuthService';
+ import { friendService } from '@/src/services/FriendService';
+@@ -35,6 +36,219 @@ export default function RoomsScreen() {
+   const [newRoomTitle, setNewRoomTitle] = useState('');
+   const [selectedFriends, setSelectedFriends] = useState<string[]>([]); // 移쒓뎄 ID 紐⑸줉
+ 
++  // 諛??앹꽦 紐⑤떖 ???щ젰???곹깭
++  const now = new Date();
++  const [createRoomYear, setCreateRoomYear] = useState(now.getFullYear());
++  const [createRoomMonth, setCreateRoomMonth] = useState(now.getMonth() + 1);
++  const [availability, setAvailability] = useState<{ [dateStr: string]: boolean }>({});
++
++  // 媛??移쒓뎄 ?쇱젙 珥덇린 ?명똿 (6~8??紐⑥쓽 ?쇱젙)
++  const initializeMockCalendars = async () => {
++    const initializedKey = '@meety_mock_calendars_initialized_v3';
++    const isInitialized = await AsyncStorage.getItem(initializedKey);
++    if (!isInitialized) {
++      const mockUserIds = ['mock-user-id-1', 'mock-user-id-2', 'mock-user-id-3'];
++      
++      for (const userId of mockUserIds) {
++        const key = `@meety_calendar_events_${userId}`;
++        const events: any = {};
++
++        const year = 2026;
++        for (const month of [6, 7, 8]) {
++          const daysInMonth = new Date(year, month, 0).getDate();
++          for (let day = 1; day <= daysInMonth; day++) {
++            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
++            const slots = Array(24).fill(false); // default free
++
++            // Mock schedules based on user ID and day pattern
++            if (userId === 'mock-user-id-1') {
++              // 源泥좎닔: 留ㅼ＜ ?? ???ㅽ썑 (14-18?? 諛붿겏, 洹몃━怨?15?쇱? ?섎（ 醫낆씪 諛붿겏
++              const d = new Date(year, month - 1, day);
++              const dayOfWeek = d.getDay();
++              if (dayOfWeek === 1 || dayOfWeek === 3) {
++                for (let h = 14; h < 18; h++) slots[h] = true;
++              }
++              if (day === 15) {
++                for (let h = 0; h < 24; h++) slots[h] = true;
++              }
++            } else if (userId === 'mock-user-id-2') {
++              // ?댁쁺?? 留ㅼ＜ ?? 紐??ㅼ쟾/??(10-15?? 諛붿겏, 洹몃━怨?20?쇱? ?섎（ 醫낆씪 諛붿겏
++              const d = new Date(year, month - 1, day);
++              const dayOfWeek = d.getDay();
++              if (dayOfWeek === 2 || dayOfWeek === 4) {
++                for (let h = 10; h < 15; h++) slots[h] = true;
++              }
++              if (day === 20) {
++                for (let h = 0; h < 24; h++) slots[h] = true;
++              }
++            } else if (userId === 'mock-user-id-3') {
++              // 諛뺣??? 留ㅼ＜ 湲????(18-22?? 諛붿겏, 洹몃━怨?25?쇱? ?섎（ 醫낆씪 諛붿겏
++              const d = new Date(year, month - 1, day);
++              const dayOfWeek = d.getDay();
++              if (dayOfWeek === 5) {
++                for (let h = 18; h < 22; h++) slots[h] = true;
++              }
++              if (day === 25) {
++                for (let h = 0; h < 24; h++) slots[h] = true;
++              }
++            }
++
++            if (slots.some(s => s)) {
++              events[dateStr] = slots;
++            }
++          }
++        }
++        await AsyncStorage.setItem(key, JSON.stringify(events));
++      }
++      await AsyncStorage.setItem(initializedKey, 'true');
++    }
++  };
++
++  // ?ㅼ떆媛?移쒓뎄 ?쇱젙 ?곕룞 寃??+  const updateAvailability = useCallback(async () => {
++    if (!currentUser) return;
++    const memberIds = [currentUser.id, ...selectedFriends];
++    
++    const memberEvents: { [memberId: string]: any } = {};
++    for (const memberId of memberIds) {
++      const key = `@meety_calendar_events_${memberId}`;
++      const data = await AsyncStorage.getItem(key);
++      memberEvents[memberId] = data ? JSON.parse(data) : {};
++    }
++
++    const daysInMonth = new Date(createRoomYear, createRoomMonth, 0).getDate();
++    const av: { [dateStr: string]: boolean } = {};
++
++    for (let day = 1; day <= daysInMonth; day++) {
++      const dateStr = `${createRoomYear}-${String(createRoomMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
++      const combinedSlots = Array(24).fill(true); // default free
++
++      for (let h = 0; h < 24; h++) {
++        let isHourBusyForAnyone = false;
++        for (const memberId of memberIds) {
++          const userEvents = memberEvents[memberId];
++          const dayEvents = userEvents[dateStr];
++          if (dayEvents && dayEvents[h] === true) {
++            isHourBusyForAnyone = true;
++            break;
++          }
++        }
++        if (isHourBusyForAnyone) {
++          combinedSlots[h] = false;
++        }
++      }
++      av[dateStr] = combinedSlots.some(slot => slot);
++    }
++    setAvailability(av);
++  }, [currentUser, selectedFriends, createRoomYear, createRoomMonth]);
++
++  useEffect(() => {
++    if (createModalVisible) {
++      updateAvailability();
++    }
++  }, [createModalVisible, selectedFriends, createRoomYear, createRoomMonth, updateAvailability]);
++
++  // ?щ젰 UI ?뚮뜑??+  const renderCreateRoomCalendar = () => {
++    const daysInMonth = new Date(createRoomYear, createRoomMonth, 0).getDate();
++    const firstDayIndex = new Date(createRoomYear, createRoomMonth - 1, 1).getDay();
++    const daysList = [];
++
++    for (let i = 0; i < firstDayIndex; i++) {
++      daysList.push({ day: null, dateStr: null });
++    }
++    for (let d = 1; d <= daysInMonth; d++) {
++      const dateStr = `${createRoomYear}-${String(createRoomMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
++      daysList.push({ day: d, dateStr });
++    }
++
++    const handlePrevMonth = () => {
++      setCreateRoomMonth(prev => {
++        if (prev === 1) {
++          setCreateRoomYear(y => y - 1);
++          return 12;
++        }
++        return prev - 1;
++      });
++      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++    };
++
++    const handleNextMonth = () => {
++      setCreateRoomMonth(prev => {
++        if (prev === 12) {
++          setCreateRoomYear(y => y + 1);
++          return 1;
++        }
++        return prev + 1;
++      });
++      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++    };
++
++    return (
++      <View style={styles.createCalContainer}>
++        {/* ???대룞 ?ㅻ뜑 */}
++        <View style={styles.createCalHeader}>
++          <TouchableOpacity onPress={handlePrevMonth} style={styles.createCalPageButton}>
++            <Ionicons name="chevron-back" size={18} color="#475569" />
++          </TouchableOpacity>
++          <Text style={styles.createCalMonthTitle}>
++            {createRoomYear}??{createRoomMonth}??+          </Text>
++          <TouchableOpacity onPress={handleNextMonth} style={styles.createCalPageButton}>
++            <Ionicons name="chevron-forward" size={18} color="#475569" />
++          </TouchableOpacity>
++        </View>
++
++        {/* ?붿씪 */}
++        <View style={styles.createCalWeekHeader}>
++          {['??, '??, '??, '??, '紐?, '湲?, '??].map((w, idx) => (
++            <Text 
++              key={w} 
++              style={[
++                styles.createCalWeekText,
++                idx === 0 && { color: '#EF4444' },
++                idx === 6 && { color: '#3B82F6' }
++              ]}
++            >
++              {w}
++            </Text>
++          ))}
++        </View>
++
++        {/* ?쇱옄 */}
++        <View style={styles.createCalDaysGrid}>
++          {daysList.map((item, idx) => {
++            if (item.day === null) {
++              return <View key={`empty-${idx}`} style={styles.createCalDayEmpty} />;
++            }
++
++            const isAvailable = availability[item.dateStr || ''] !== false;
++
++            return (
++              <View 
++                key={item.dateStr} 
++                style={[
++                  styles.createCalDayCell,
++                  !isAvailable && styles.createCalDayCellUnavailable
++                ]}
++              >
++                <Text 
++                  style={[
++                    styles.createCalDayText,
++                    !isAvailable && styles.createCalDayTextUnavailable
++                  ]}
++                >
++                  {item.day}
++                </Text>
++                {isAvailable && <View style={styles.createCalAvailableDot} />}
++              </View>
++            );
++          })}
++        </View>
++      </View>
++    );
++  };
++
+   useFocusEffect(
+     useCallback(() => {
+       loadData();
+@@ -42,6 +256,17 @@ export default function RoomsScreen() {
+   );
+ 
+   const loadData = async () => {
++    // ?쇳쉶??留덉씠洹몃젅?댁뀡: ?댁쟾 ?뚯뒪?몃갑 ?곗씠??珥덇린 泥?냼
++    const roomsCleanedKey = '@meety_rooms_cleaned_v2';
++    const isCleaned = await AsyncStorage.getItem(roomsCleanedKey);
++    if (!isCleaned) {
++      await AsyncStorage.removeItem('@meety_rooms');
++      await AsyncStorage.setItem(roomsCleanedKey, 'true');
++    }
++
++    // 紐⑥쓽 ?쇱젙 ?명똿 (?뚯뒪?몄슜)
++    await initializeMockCalendars();
++
+     const user = await authService.getCurrentUser();
+     setCurrentUser(user);
+     if (user) {
+@@ -290,39 +515,44 @@ export default function RoomsScreen() {
+               <View style={styles.modalContent}>
+                 <Text style={styles.modalTitle}>?덈줈???쎌냽 議곗쑉 諛??앹꽦</Text>
+ 
+-                <View style={styles.inputGroup}>
+-                  <Text style={styles.inputLabel}>諛??쒕ぉ</Text>
+-                  <TextInput
+-                    style={styles.textInput}
+-                    value={newRoomTitle}
+-                    onChangeText={setNewRoomTitle}
+-                    placeholder="?? 6???숆린 紐⑥엫"
+-                    placeholderTextColor="#64748B"
+-                  />
+-                </View>
++                <ScrollView style={{ flexShrink: 1, marginBottom: 16 }} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
++                  <View style={styles.inputGroup}>
++                    <Text style={styles.inputLabel}>諛??쒕ぉ</Text>
++                    <TextInput
++                      style={styles.textInput}
++                      value={newRoomTitle}
++                      onChangeText={setNewRoomTitle}
++                      placeholder="?? 6???숆린 紐⑥엫"
++                      placeholderTextColor="#64748B"
++                    />
++                  </View>
+ 
+-                <Text style={styles.inputLabel}>珥덈???移쒓뎄 ?좏깮 (以묐났 媛??</Text>
+-                <ScrollView style={styles.friendsSelectScroll}>
+-                  {friends.map((friend) => {
+-                    const isSelected = selectedFriends.includes(friend.id);
+-                    return (
+-                      <TouchableOpacity
+-                        key={friend.id}
+-                        style={[styles.friendSelectItem, isSelected && styles.friendSelectItemActive]}
+-                        onPress={() => toggleSelectFriend(friend.id)}
+-                        activeOpacity={0.8}
+-                      >
+-                        <Ionicons
+-                          name={isSelected ? 'checkbox' : 'square-outline'}
+-                          size={20}
+-                          color={isSelected ? '#869B60' : '#7F7F7F'}
+-                        />
+-                        <Text style={[styles.friendSelectName, isSelected && styles.friendSelectNameActive]}>
+-                          {friend.nickname} #{friend.userTag}
+-                        </Text>
+-                      </TouchableOpacity>
+-                    );
+-                  })}
++                  <Text style={styles.inputLabel}>珥덈???移쒓뎄 ?좏깮 (以묐났 媛??</Text>
++                  <ScrollView style={styles.friendsSelectScroll} nestedScrollEnabled={true}>
++                    {friends.map((friend) => {
++                      const isSelected = selectedFriends.includes(friend.id);
++                      return (
++                        <TouchableOpacity
++                          key={friend.id}
++                          style={[styles.friendSelectItem, isSelected && styles.friendSelectItemActive]}
++                          onPress={() => toggleSelectFriend(friend.id)}
++                          activeOpacity={0.8}
++                        >
++                          <Ionicons
++                            name={isSelected ? 'checkbox' : 'square-outline'}
++                            size={20}
++                            color={isSelected ? '#869B60' : '#7F7F7F'}
++                          />
++                          <Text style={[styles.friendSelectName, isSelected && styles.friendSelectNameActive]}>
++                            {friend.nickname} #{friend.userTag}
++                          </Text>
++                        </TouchableOpacity>
++                      );
++                    })}
++                  </ScrollView>
++
++                  <Text style={styles.inputLabel}>?뱟 留뚮궇 ???덈뒗 ???뺤씤 (?ㅼ떆媛??곕룞)</Text>
++                  {renderCreateRoomCalendar()}
+                 </ScrollView>
+ 
+                 <View style={styles.modalFooter}>
+@@ -670,4 +900,75 @@ const styles = StyleSheet.create({
+     fontSize: 14,
+     fontWeight: '700',
+   },
++  createCalContainer: {
++    backgroundColor: '#F8FAFC',
++    borderRadius: 12,
++    padding: 12,
++    borderWidth: 1,
++    borderColor: '#E2E8F0',
++    marginTop: 8,
++    marginBottom: 12,
++  },
++  createCalHeader: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++    alignItems: 'center',
++    marginBottom: 12,
++  },
++  createCalPageButton: {
++    padding: 4,
++  },
++  createCalMonthTitle: {
++    fontSize: 14,
++    fontWeight: '700',
++    color: '#1E293B',
++  },
++  createCalWeekHeader: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++    marginBottom: 8,
++  },
++  createCalWeekText: {
++    width: '14.28%',
++    textAlign: 'center',
++    fontSize: 10,
++    fontWeight: '600',
++    color: '#64748B',
++  },
++  createCalDaysGrid: {
++    flexDirection: 'row',
++    flexWrap: 'wrap',
++  },
++  createCalDayCell: {
++    width: '14.28%',
++    aspectRatio: 1,
++    justifyContent: 'center',
++    alignItems: 'center',
++    marginVertical: 2,
++    borderRadius: 8,
++    position: 'relative',
++  },
++  createCalDayCellUnavailable: {
++    opacity: 0.25,
++  },
++  createCalDayEmpty: {
++    width: '14.28%',
++    aspectRatio: 1,
++  },
++  createCalDayText: {
++    fontSize: 12,
++    fontWeight: '600',
++    color: '#1E293B',
++  },
++  createCalDayTextUnavailable: {
++    color: '#94A3B8',
++  },
++  createCalAvailableDot: {
++    position: 'absolute',
++    bottom: 3,
++    width: 3,
++    height: 3,
++    borderRadius: 1.5,
++    backgroundColor: '#869B60',
++  },
+ });
+diff --git a/app/room/[id].tsx b/app/room/[id].tsx
+index 853654d..eba78cc 100644
+--- a/app/room/[id].tsx
++++ b/app/room/[id].tsx
+@@ -309,6 +309,15 @@ export default function RoomDetailScreen() {
+   const memberUsers = room.members.map(mId => allUsers.find(u => u.id === mId)).filter(Boolean) as User[];
+   const recommended = room.recommendedDates || [];
+ 
++  // 援먯갑?곹깭 媛먯?: 紐⑤뱺 李몄뿬?먭? 紐⑤뱺 異붿쿇 ?좎쭨???ы몴?덇퀬, 李ъ꽦?쒕쭔 ?덈뒗 ?좎쭨(0媛쒖쓽 X瑜?諛쏆쓬)媛 ?놁쓬
++  const everyoneVoted = room && room.members.every(mId => 
++    recommended.every(dDate => room.votes?.[mId]?.[dDate] !== undefined)
++  );
++  const hasConfirmableDate = room && recommended.some(dDate => 
++    room.members.every(mId => room.votes?.[mId]?.[dDate] !== 'X')
++  );
++  const isDeadlocked = room && everyoneVoted && !hasConfirmableDate;
++
+   return (
+     <SafeAreaView style={styles.safeArea}>
+       <StatusBar barStyle="dark-content" />
+@@ -322,8 +331,14 @@ export default function RoomDetailScreen() {
+         {/* ?곷떒 怨좎젙(Sticky) ?묒씠???쇱젙 異붿쿇 ?ㅻ뜑 */}
+         <View style={styles.stickyHeaderCard}>
+           <TouchableOpacity 
+-            style={styles.headerTrigger}
+-            onPress={() => setIsHeaderExpanded(!isHeaderExpanded)}
++            style={[styles.headerTrigger, isDeadlocked && styles.headerTriggerDeadlocked]}
++            onPress={() => {
++              if (isDeadlocked) {
++                handleOpenCalendarModal();
++              } else {
++                setIsHeaderExpanded(!isHeaderExpanded);
++              }
++            }}
+             activeOpacity={0.8}
+           >
+             <View style={{ flex: 1 }}>
+@@ -333,6 +348,13 @@ export default function RoomDetailScreen() {
+                     ?럦 紐⑥엫 ?뺤젙: {formatDateLabel(room.confirmedDate)}
+                   </Text>
+                 </View>
++              ) : isDeadlocked ? (
++                <View style={styles.deadlockedBanner}>
++                  <Ionicons name="warning-outline" size={16} color="#EF4444" />
++                  <Text style={styles.deadlockedBannerText}>
++                    ?좑툘 ?쇱젙 議곗쑉 (?섍껄 遺덉씪移?- ?대┃ ??議곗쑉)
++                  </Text>
++                </View>
+               ) : (
+                 <View style={styles.votingBanner}>
+                   <Ionicons name="calendar-outline" size={16} color="#869B60" />
+@@ -343,18 +365,18 @@ export default function RoomDetailScreen() {
+               )}
+               {!isHeaderExpanded && !room.confirmedDate && recommended.length > 0 && (
+                 <Text style={styles.headerDatesPreview}>
+-                  ?꾨낫: {recommended.map(d => d.split('-')[1] + '/' + d.split('-')[2]).join(', ')}
++                  {isDeadlocked ? '?좑툘 ?꾩썝 ?쇱젙 ?ъ“?뺤씠 ?꾩슂?⑸땲?? (?대┃?섏뿬 議곗쑉)' : `?꾨낫: ${recommended.map(d => d.split('-')[1] + '/' + d.split('-')[2]).join(', ')}`}
+                 </Text>
+               )}
+             </View>
+             <Ionicons 
+-              name={isHeaderExpanded ? "chevron-up" : "chevron-down"} 
++              name={isDeadlocked ? "chevron-forward" : (isHeaderExpanded ? "chevron-up" : "chevron-down")} 
+               size={18} 
+               color="#475569" 
+             />
+           </TouchableOpacity>
+ 
+-          {isHeaderExpanded && (
++          {isHeaderExpanded && !isDeadlocked && (
+             <View style={styles.headerExpandedContent}>
+               <View style={styles.divider} />
+               
+@@ -362,77 +384,46 @@ export default function RoomDetailScreen() {
+               <ScrollView style={styles.recommendedScroll} nestedScrollEnabled>
+                 {recommended.map((dateStr, idx) => {
+                   const label = formatDateLabel(dateStr);
+-                  
+-                  // 李몄뿬???ы몴 ?곹깭 ?뚯떛
+-                  const yesVoters: string[] = [];
+-                  const noVoters: string[] = [];
+-                  const pendingVoters: string[] = [];
+-
+-                  memberUsers.forEach(u => {
+-                    const v = room.votes?.[u.id]?.[dateStr];
+-                    if (v === 'O') yesVoters.push(u.nickname);
+-                    else if (v === 'X') noVoters.push(u.nickname);
+-                    else pendingVoters.push(u.nickname);
+-                  });
+-
+                   const activeUserVote = room.votes?.[activeSimUser?.id || '']?.[dateStr];
+ 
+                   return (
+                     <View key={dateStr} style={[styles.recommendCard, room.confirmedDate === dateStr && styles.recommendCardConfirmed]}>
+-                      <View style={styles.recommendCardRow}>
+-                        <View style={{ flex: 1 }}>
++                      <View style={styles.compactRecommendContent}>
++                        <View style={{ alignItems: 'center', marginBottom: 6 }}>
+                           <Text style={styles.recommendCardIndex}>?꾨낫 {idx + 1}</Text>
+                           <Text style={styles.recommendCardLabel}>{label}</Text>
+                         </View>
+                         
+-                        {/* ???ы몴 踰꾪듉 (?쒕??덉씠???좎? 湲곗?) */}
+-                        <View style={styles.voteButtonsContainer}>
++                        {/* ???ы몴 踰꾪듉 - ?좎쭨 諛묒뿉 媛濡?諛곗튂 */}
++                        <View style={styles.compactVoteButtonsContainer}>
+                           <TouchableOpacity
+                             style={[
+-                              styles.voteButton, 
++                              styles.compactVoteButton, 
+                               styles.voteButtonYes, 
+                               activeUserVote === 'O' && styles.voteButtonYesActive
+                             ]}
+                             onPress={() => handleVote(dateStr, 'O')}
+                             activeOpacity={0.7}
+                           >
+-                            <Text style={[styles.voteButtonText, activeUserVote === 'O' && styles.voteButtonTextActive]}>O</Text>
++                            <Text style={[styles.compactVoteButtonText, styles.voteButtonYesText, activeUserVote === 'O' && styles.voteButtonTextActive]}>
++                              李ъ꽦 (O)
++                            </Text>
+                           </TouchableOpacity>
+                           <TouchableOpacity
+                             style={[
+-                              styles.voteButton, 
++                              styles.compactVoteButton, 
+                               styles.voteButtonNo, 
+                               activeUserVote === 'X' && styles.voteButtonNoActive
+                             ]}
+                             onPress={() => handleVote(dateStr, 'X')}
+                             activeOpacity={0.7}
+                           >
+-                            <Text style={[styles.voteButtonText, activeUserVote === 'X' && styles.voteButtonTextActive]}>X</Text>
++                            <Text style={[styles.compactVoteButtonText, styles.voteButtonNoText, activeUserVote === 'X' && styles.voteButtonTextActive]}>
++                              嫄곗젅 (X)
++                            </Text>
+                           </TouchableOpacity>
+                         </View>
+                       </View>
+-
+-                      {/* 援ъ꽦?먮퀎 ?ы몴 ?댁뿭 由ъ뒪??*/}
+-                      <View style={styles.voteBreakdown}>
+-                        {yesVoters.length > 0 && (
+-                          <View style={styles.voteBreakdownRow}>
+-                            <View style={[styles.dotBadge, styles.dotYes]} />
+-                            <Text style={styles.voteBreakdownText}>李ъ꽦: {yesVoters.join(', ')}</Text>
+-                          </View>
+-                        )}
+-                        {noVoters.length > 0 && (
+-                          <View style={styles.voteBreakdownRow}>
+-                            <View style={[styles.dotBadge, styles.dotNo]} />
+-                            <Text style={styles.voteBreakdownText}>嫄곗젅: {noVoters.join(', ')}</Text>
+-                          </View>
+-                        )}
+-                        {pendingVoters.length > 0 && (
+-                          <View style={styles.voteBreakdownRow}>
+-                            <View style={[styles.dotBadge, styles.dotPending]} />
+-                            <Text style={styles.voteBreakdownText}>誘명닾?? {pendingVoters.join(', ')}</Text>
+-                          </View>
+-                        )}
+-                      </View>
+                     </View>
+                   );
+                 })}
+@@ -839,11 +830,6 @@ const styles = StyleSheet.create({
+     borderColor: '#10B981',
+     backgroundColor: 'rgba(16, 185, 129, 0.05)',
+   },
+-  recommendCardRow: {
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-    justifyContent: 'space-between',
+-  },
+   recommendCardIndex: {
+     fontSize: 10,
+     fontWeight: '700',
+@@ -855,70 +841,65 @@ const styles = StyleSheet.create({
+     fontWeight: '700',
+     color: '#1E293B',
+   },
+-  voteButtonsContainer: {
++  headerTriggerDeadlocked: {
++    backgroundColor: 'rgba(239, 68, 68, 0.05)',
++  },
++  deadlockedBanner: {
+     flexDirection: 'row',
++    alignItems: 'center',
+     gap: 6,
+   },
+-  voteButton: {
+-    width: 36,
+-    height: 36,
+-    borderRadius: 18,
+-    backgroundColor: '#FFFFFF',
++  deadlockedBannerText: {
++    fontSize: 14,
++    fontWeight: '700',
++    color: '#EF4444',
++  },
++  compactRecommendContent: {
++    flexDirection: 'column',
++    alignItems: 'center',
++    paddingVertical: 4,
++  },
++  compactVoteButtonsContainer: {
++    flexDirection: 'row',
++    gap: 8,
++    marginTop: 6,
++    width: '100%',
++  },
++  compactVoteButton: {
++    flex: 1,
++    height: 32,
++    borderRadius: 8,
+     borderWidth: 1.5,
+-    borderColor: '#E2E8F0',
+     justifyContent: 'center',
+     alignItems: 'center',
+   },
++  compactVoteButtonText: {
++    fontSize: 12,
++    fontWeight: '700',
++  },
+   voteButtonYes: {
+     borderColor: '#869B60',
++    backgroundColor: '#FFFFFF',
+   },
+   voteButtonYesActive: {
+     backgroundColor: '#869B60',
+   },
++  voteButtonYesText: {
++    color: '#869B60',
++  },
+   voteButtonNo: {
+     borderColor: '#EF4444',
++    backgroundColor: '#FFFFFF',
+   },
+   voteButtonNoActive: {
+     backgroundColor: '#EF4444',
+   },
+-  voteButtonText: {
+-    fontSize: 14,
+-    fontWeight: '700',
++  voteButtonNoText: {
++    color: '#EF4444',
+   },
+   voteButtonTextActive: {
+     color: '#FFFFFF',
+   },
+-  voteBreakdown: {
+-    marginTop: 8,
+-    gap: 4,
+-    borderTopWidth: 1,
+-    borderTopColor: '#F1F5F9',
+-    paddingTop: 6,
+-  },
+-  voteBreakdownRow: {
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-    gap: 6,
+-  },
+-  dotBadge: {
+-    width: 6,
+-    height: 6,
+-    borderRadius: 3,
+-  },
+-  dotYes: {
+-    backgroundColor: '#869B60',
+-  },
+-  dotNo: {
+-    backgroundColor: '#EF4444',
+-  },
+-  dotPending: {
+-    backgroundColor: '#94A3B8',
+-  },
+-  voteBreakdownText: {
+-    fontSize: 11,
+-    color: '#475569',
+-    fontWeight: '500',
+-  },
+   excludeLinkButton: {
+     alignItems: 'center',
+     paddingVertical: 10,
+diff --git a/src/services/AuthService.ts b/src/services/AuthService.ts
+index 500d62d..9a89684 100644
+--- a/src/services/AuthService.ts
++++ b/src/services/AuthService.ts
+@@ -67,9 +67,23 @@ const MOCK_FRIENDS_SOURCE: Omit<User, 'id'>[] = [
+ class MockAuthService implements IAuthService {
+   async initializeMockUsers(): Promise<void> {
+     try {
++      const resetDone = await AsyncStorage.getItem('@meety_db_reset_done_v4');
++      if (resetDone !== 'true') {
++        // Clear all session, users, rooms, and other keys to ensure a clean test state
++        await AsyncStorage.clear();
++
++        const mockUsers: User[] = MOCK_FRIENDS_SOURCE.map((u, index) => ({
++          ...u,
++          id: `mock-user-id-${index + 1}`
++        }));
++        await AsyncStorage.setItem(USERS_DB_KEY, JSON.stringify(mockUsers));
++        await AsyncStorage.setItem('@meety_db_reset_done_v4', 'true');
++        console.log('User database reset completed: 3 mock users loaded.');
++        return;
++      }
++
+       const usersStr = await AsyncStorage.getItem(USERS_DB_KEY);
+       if (!usersStr) {
+-        // Mock 移쒓뎄 ?좎? ?앹꽦 諛?異붽?
+         const mockUsers: User[] = MOCK_FRIENDS_SOURCE.map((u, index) => ({
+           ...u,
+           id: `mock-user-id-${index + 1}`
+diff --git a/src/services/CalendarService.ts b/src/services/CalendarService.ts
+index ce9fc6e..c385d71 100644
+--- a/src/services/CalendarService.ts
++++ b/src/services/CalendarService.ts
+@@ -1,6 +1,6 @@
+ import AsyncStorage from '@react-native-async-storage/async-storage';
+ import * as Calendar from 'expo-calendar';
+-import { CalendarDayEvents } from '../types';
++import { CalendarDayEvents, CalendarEventDetail } from '../types';
+ 
+ import { authService } from './AuthService';
+ 
+@@ -11,6 +11,7 @@ export interface ICalendarService {
+   saveDayEvents(date: string, slots: boolean[]): Promise<CalendarDayEvents>;
+   toggleAllDay(date: string): Promise<CalendarDayEvents>;
+   syncDeviceCalendar(): Promise<CalendarDayEvents>;
++  getEventDetails(date: string): Promise<CalendarEventDetail[]>;
+ }
+ 
+ class MockCalendarService implements ICalendarService {
+@@ -31,6 +32,64 @@ class MockCalendarService implements ICalendarService {
+     }
+   }
+ 
++  async getEventDetails(date: string): Promise<CalendarEventDetail[]> {
++    try {
++      const currentUser = await authService.getCurrentUser();
++      const userId = currentUser ? currentUser.id : 'guest';
++      const key = `@meety_calendar_details_${userId}`;
++      const data = await AsyncStorage.getItem(key);
++      const allDetails = data ? JSON.parse(data) : {};
++      
++      if (allDetails[date] && allDetails[date].length > 0) {
++        return allDetails[date];
++      }
++      
++      // Fallback: If no details are stored but we have raw slots, generate "媛쒖씤 ?쇱젙" fallback details on the fly.
++      const events = await this.getEvents();
++      const slots = events[date];
++      if (slots && slots.some(slot => slot)) {
++        const fallbackDetails: CalendarEventDetail[] = [];
++        let start: number | null = null;
++        for (let i = 0; i < 24; i++) {
++          if (slots[i]) {
++            if (start === null) {
++              start = i;
++            }
++          } else {
++            if (start !== null) {
++              fallbackDetails.push({
++                id: `fallback-${date}-${start}-${i}`,
++                title: '媛쒖씤 ?쇱젙',
++                startHour: start,
++                endHour: i,
++                startTimeStr: `${String(start).padStart(2, '0')}:00`,
++                endTimeStr: `${String(i).padStart(2, '0')}:00`,
++                isAllDay: start === 0 && i === 24,
++              });
++              start = null;
++            }
++          }
++        }
++        if (start !== null) {
++          fallbackDetails.push({
++            id: `fallback-${date}-${start}-24`,
++            title: start === 0 ? '醫낆씪 ?쇱젙' : '媛쒖씤 ?쇱젙',
++            startHour: start,
++            endHour: 24,
++            startTimeStr: `${String(start).padStart(2, '0')}:00`,
++            endTimeStr: '24:00',
++            isAllDay: start === 0,
++          });
++        }
++        return fallbackDetails;
++      }
++      return [];
++    } catch (e) {
++      console.error('Failed to get calendar event details', e);
++      return [];
++    }
++  }
++
+   async saveDayEvents(date: string, slots: boolean[]): Promise<CalendarDayEvents> {
+     try {
+       const events = await this.getEvents();
+@@ -44,6 +103,54 @@ class MockCalendarService implements ICalendarService {
+       
+       const key = await this.getStorageKey();
+       await AsyncStorage.setItem(key, JSON.stringify(events));
++
++      // Save corresponding details
++      const currentUser = await authService.getCurrentUser();
++      const userId = currentUser ? currentUser.id : 'guest';
++      const detailsKey = `@meety_calendar_details_${userId}`;
++      const detailsData = await AsyncStorage.getItem(detailsKey);
++      const allDetails = detailsData ? JSON.parse(detailsData) : {};
++
++      if (!hasAnyEvent) {
++        delete allDetails[date];
++      } else {
++        const newDetails: CalendarEventDetail[] = [];
++        let start: number | null = null;
++        for (let i = 0; i < 24; i++) {
++          if (slots[i]) {
++            if (start === null) {
++              start = i;
++            }
++          } else {
++            if (start !== null) {
++              newDetails.push({
++                id: `manual-${date}-${start}-${i}`,
++                title: '媛쒖씤 ?쇱젙',
++                startHour: start,
++                endHour: i,
++                startTimeStr: `${String(start).padStart(2, '0')}:00`,
++                endTimeStr: `${String(i).padStart(2, '0')}:00`,
++                isAllDay: start === 0 && i === 24,
++              });
++              start = null;
++            }
++          }
++        }
++        if (start !== null) {
++          newDetails.push({
++            id: `manual-${date}-${start}-24`,
++            title: start === 0 ? '醫낆씪 ?쇱젙' : '媛쒖씤 ?쇱젙',
++            startHour: start,
++            endHour: 24,
++            startTimeStr: `${String(start).padStart(2, '0')}:00`,
++            endTimeStr: '24:00',
++            isAllDay: start === 0,
++          });
++        }
++        allDetails[date] = newDetails;
++      }
++      await AsyncStorage.setItem(detailsKey, JSON.stringify(allDetails));
++
+       return events;
+     } catch (e) {
+       console.error('Failed to save calendar events', e);
+@@ -103,17 +210,93 @@ class MockCalendarService implements ICalendarService {
+       const meetyEvents = await this.getEvents();
+ 
+       // 6. ?붾컮?댁뒪 ?쇱젙 ?뚯떛 諛?蹂묓빀
++      const currentUser = await authService.getCurrentUser();
++      const userId = currentUser ? currentUser.id : 'guest';
++      const detailsKey = `@meety_calendar_details_${userId}`;
++      const detailsData = await AsyncStorage.getItem(detailsKey);
++      const allDetails = detailsData ? JSON.parse(detailsData) : {};
++
++      // 6-1. 湲곗〈 meetyEvents 以??곸꽭 ?뺣낫媛 ?꾪? 留ㅽ븨?섏? ?딆? ?щ’??"?섎룞 ?쇱젙"?쇰줈 蹂?섑븯??蹂댁〈 (?? 湲곗〈 ?뺤젙 紐⑥엫 ?먮뒗 ?섎룞 ?묒꽦 ?쇱젙)
++      Object.keys(meetyEvents).forEach(dateStr => {
++        const slots = meetyEvents[dateStr];
++        if (slots && slots.some(slot => slot)) {
++          if (!allDetails[dateStr] || allDetails[dateStr].length === 0) {
++            const fallbackDetails: CalendarEventDetail[] = [];
++            let start: number | null = null;
++            for (let i = 0; i < 24; i++) {
++              if (slots[i]) {
++                if (start === null) {
++                  start = i;
++                }
++              } else {
++                if (start !== null) {
++                  fallbackDetails.push({
++                    id: `manual-${dateStr}-${start}-${i}`,
++                    title: '媛쒖씤 ?쇱젙',
++                    startHour: start,
++                    endHour: i,
++                    startTimeStr: `${String(start).padStart(2, '0')}:00`,
++                    endTimeStr: `${String(i).padStart(2, '0')}:00`,
++                    isAllDay: start === 0 && i === 24,
++                  });
++                  start = null;
++                }
++              }
++            }
++            if (start !== null) {
++              fallbackDetails.push({
++                id: `manual-${dateStr}-${start}-24`,
++                title: start === 0 ? '醫낆씪 ?쇱젙' : '媛쒖씤 ?쇱젙',
++                startHour: start,
++                endHour: 24,
++                startTimeStr: `${String(start).padStart(2, '0')}:00`,
++                endTimeStr: '24:00',
++                isAllDay: start === 0,
++              });
++            }
++            allDetails[dateStr] = fallbackDetails;
++          }
++        }
++      });
++
++      // 6-2. 湲곌린 罹섎┛???숆린?붾맂 ?쇱젙???꾩쟾????뼱?곌린 ?꾪빐, 湲곗〈 ?곸꽭 ?쇱젙?먯꽌 湲곌린 ?곕룞 ?쇱젙留??쒓굅?섍퀬 ?섎룞/紐⑥엫 ?쇱젙? ?④꺼??+      Object.keys(allDetails).forEach(dateStr => {
++        allDetails[dateStr] = allDetails[dateStr].filter((event: CalendarEventDetail) => {
++          // manual-, fallback-, meeting- ?묐몢?щ줈 ?쒖옉?섎뒗 ?쇱젙留?蹂댁〈
++          return event.id.startsWith('manual-') || event.id.startsWith('fallback-') || event.id.startsWith('meeting-');
++        });
++        if (allDetails[dateStr].length === 0) {
++          delete allDetails[dateStr];
++        }
++      });
++
++      // 6-3. 湲곌린 罹섎┛?붿뿉??遺덈윭?????쇱젙???곸꽭 紐⑸줉??異붽?
+       deviceEvents.forEach(event => {
+         const evStart = new Date(event.startDate);
+         const evEnd = new Date(event.endDate);
++        const title = event.title || '?붾컮?댁뒪 ?쇱젙';
+         
+         // 醫낆씪 ?쇱젙 ?먮뒗 ?쒖옉?쇨낵 醫낅즺?쇱씠 ?ㅻⅨ ?ㅼ씪 ?쇱젙 泥섎━
+         if (event.allDay || evStart.toDateString() !== evEnd.toDateString()) {
+-          // ?쇱젙??嫄몄퀜 ?덈뒗 ?좎쭨???쒗쉶?섏뿬 醫낆씪 梨꾩?
+           const tempDate = new Date(evStart);
+           while (tempDate <= evEnd) {
+             const dateStr = this.formatDateKey(tempDate);
+-            meetyEvents[dateStr] = Array(24).fill(true);
++
++            if (!allDetails[dateStr]) {
++              allDetails[dateStr] = [];
++            }
++            const exists = allDetails[dateStr].some((d: any) => d.id === event.id);
++            if (!exists) {
++              allDetails[dateStr].push({
++                id: event.id || `sync-${event.title}-${tempDate.getTime()}`,
++                title: title,
++                startHour: 0,
++                endHour: 24,
++                startTimeStr: '00:00',
++                endTimeStr: '24:00',
++                isAllDay: true,
++              });
++            }
+             tempDate.setDate(tempDate.getDate() + 1);
+           }
+         } else {
+@@ -122,24 +305,48 @@ class MockCalendarService implements ICalendarService {
+           const startHour = evStart.getHours();
+           const endHour = evEnd.getHours();
+           
+-          if (!meetyEvents[dateStr]) {
+-            meetyEvents[dateStr] = Array(24).fill(false);
++          const startTimeStr = `${String(evStart.getHours()).padStart(2, '0')}:${String(evStart.getMinutes()).padStart(2, '0')}`;
++          const endTimeStr = `${String(evEnd.getHours()).padStart(2, '0')}:${String(evEnd.getMinutes()).padStart(2, '0')}`;
++
++          if (!allDetails[dateStr]) {
++            allDetails[dateStr] = [];
+           }
+-          
+-          // 遺??뺣낫瑜?臾댁떆?섍퀬 ?쒓컙 ?뺣낫留?媛?몄???梨꾩?
+-          // ?? 13:30 ~ 15:15 ?대㈃ 13, 14, 15???щ’ ?쒖꽦??-          for (let h = startHour; h <= endHour; h++) {
++          const exists = allDetails[dateStr].some((d: any) => d.id === event.id);
++          if (!exists) {
++            allDetails[dateStr].push({
++              id: event.id || `sync-${event.title}-${evStart.getTime()}`,
++              title: title,
++              startHour: startHour,
++              endHour: endHour,
++              startTimeStr: startTimeStr,
++              endTimeStr: endTimeStr,
++              isAllDay: false,
++            });
++          }
++        }
++      });
++
++      // 6-4. ?곸꽭 ?쇱젙??湲곕컲?쇰줈 meetyEvents (24?쒓컙 ?щ’ ?곗씠?? ?꾩껜瑜??ъ깮?깊븯??遺덉씪移섎? ?댁냼
++      const updatedMeetyEvents: CalendarDayEvents = {};
++      Object.keys(allDetails).forEach(dateStr => {
++        const slots = Array(24).fill(false);
++        allDetails[dateStr].forEach((event: CalendarEventDetail) => {
++          const start = event.startHour;
++          const end = event.endHour;
++          for (let h = start; h < end; h++) {
+             if (h >= 0 && h < 24) {
+-              meetyEvents[dateStr][h] = true;
++              slots[h] = true;
+             }
+           }
+-        }
++        });
++        updatedMeetyEvents[dateStr] = slots;
+       });
+ 
+       // 7. 蹂묓빀??寃곌낵 ???       const key = await this.getStorageKey();
+-      await AsyncStorage.setItem(key, JSON.stringify(meetyEvents));
+-      return meetyEvents;
++      await AsyncStorage.setItem(key, JSON.stringify(updatedMeetyEvents));
++      await AsyncStorage.setItem(detailsKey, JSON.stringify(allDetails));
++      return updatedMeetyEvents;
+     } catch (e) {
+       console.error('Failed to sync device calendar', e);
+       return await this.getEvents();
+diff --git a/src/services/RoomService.ts b/src/services/RoomService.ts
+index 705d092..325377c 100644
+--- a/src/services/RoomService.ts
++++ b/src/services/RoomService.ts
+@@ -265,24 +265,26 @@ class MockRoomService implements IRoomService {
+ 
+     room.votes[userId][dateStr] = vote;
+ 
+-    // ?ы몴 諛섏쁺 ?쒖뒪??硫붿떆吏
+-    const allUsers = await authService.getAllUsers();
+-    const voter = allUsers.find(u => u.id === userId);
+-    const voterName = voter ? voter.nickname : '?꾧뎔媛';
+-    
+-    const dParts = dateStr.split('-');
+-    const dateLabel = `${parseInt(dParts[1], 10)}??${parseInt(dParts[2], 10)}??;
++    // 3媛??좎쭨 紐⑤몢 ?ы몴?덈뒗吏 泥댄겕?섏뿬 硫붿떆吏 諛쒖넚
++    const recommended = room.recommendedDates || [];
++    const userVotes = room.votes[userId] || {};
++    const votedCount = recommended.filter(d => userVotes[d] !== undefined).length;
+     
+-    await this.sendMessage(
+-      roomId,
+-      'system',
+-      '?쒖뒪??,
+-      `?뿳截?${voterName}?섏씠 ${dateLabel} ?꾨낫??[${vote === 'O' ? '李ъ꽦(O)' : '嫄곗젅(X)'}] ?ы몴瑜??덉뒿?덈떎.`,
+-      true
+-    );
++    if (votedCount === 3) {
++      const allUsers = await authService.getAllUsers();
++      const voter = allUsers.find(u => u.id === userId);
++      const voterName = voter ? voter.nickname : '?꾧뎔媛';
++      
++      await this.sendMessage(
++        roomId,
++        'system',
++        '?쒖뒪??,
++        `?뿳截?${voterName}?섏씠 紐⑤뱺 ?꾨낫 ?좎쭨(3媛???????ы몴瑜??꾨즺?덉뒿?덈떎.`,
++        true
++      );
++    }
+ 
+     // 紐⑤몢媛 紐⑤뱺 ?좎쭨??????ы몴瑜??꾨즺?덈뒗吏 寃??-    const recommended = room.recommendedDates || [];
+     const allMembers = room.members;
+     
+     let everyoneVotedAll = true;
+@@ -326,20 +328,60 @@ class MockRoomService implements IRoomService {
+         const bParts = bestDate.split('-');
+         const confirmedLabel = `${parseInt(bParts[1], 10)}??${parseInt(bParts[2], 10)}??;
+         
++        // 紐⑤뱺 硫ㅻ쾭??罹섎┛?붿뿉 ?뺤젙???쇱젙???깅줉 (?섎（ 醫낆씪 諛붿겏)
++        for (const memberId of room.members) {
++          const key = `@meety_calendar_events_${memberId}`;
++          const userEventsData = await AsyncStorage.getItem(key);
++          const userEvents = userEventsData ? JSON.parse(userEventsData) : {};
++          userEvents[bestDate] = Array(24).fill(true); // ?섎（ 醫낆씪 諛붿겏
++          await AsyncStorage.setItem(key, JSON.stringify(userEvents));
++
++          // ?곸꽭 ?쇱젙?먮룄 ?깅줉
++          const detailsKey = `@meety_calendar_details_${memberId}`;
++          const detailsData = await AsyncStorage.getItem(detailsKey);
++          const allDetails = detailsData ? JSON.parse(detailsData) : {};
++          if (!allDetails[bestDate]) {
++            allDetails[bestDate] = [];
++          }
++          // 以묐났 諛⑹?
++          const exists = allDetails[bestDate].some((d: any) => d.id === `meeting-${room.id}`);
++          if (!exists) {
++            allDetails[bestDate].push({
++              id: `meeting-${room.id}`,
++              title: `紐⑥엫: ${room.title}`,
++              startHour: 0,
++              endHour: 24,
++              startTimeStr: '00:00',
++              endTimeStr: '24:00',
++              isAllDay: true,
++            });
++            await AsyncStorage.setItem(detailsKey, JSON.stringify(allDetails));
++          }
++        }
++
+         await this.sendMessage(
+           roomId,
+           'system',
+           '?쒖뒪??,
+-          `?럦 異뺥븯?⑸땲?? 紐⑤뱺 援ъ꽦?먯씠 ?숈쓽?섏뿬 紐⑥엫 ?좎쭨媛 [${confirmedLabel}]濡?理쒖쥌 ?뺤젙?섏뿀?듬땲??`,
++          `?럦 異뺥븯?⑸땲?? 紐⑤뱺 援ъ꽦?먯씠 ?숈쓽?섏뿬 紐⑥엫 ?좎쭨媛 [${confirmedLabel}]濡?理쒖쥌 ?뺤젙?섏뿀?듬땲?? (紐⑤뱺 援ъ꽦?먯쓽 媛쒖씤 ?щ젰???쇱젙??諛섏쁺?섏뿀?듬땲??`,
+           true
+         );
+       } else {
+         room.confirmedDate = null;
++        
++        // 援먯갑?곹깭(紐⑤몢 寃뱀튂吏 ?딄쾶 ?ы몴?? 媛먯? 諛?calendarAdjusted 珥덇린??+        if (!room.calendarAdjusted) {
++          room.calendarAdjusted = {};
++          for (const mId of room.members) {
++            room.calendarAdjusted[mId] = false;
++          }
++        }
++
+         await this.sendMessage(
+           roomId,
+           'system',
+           '?쒖뒪??,
+-          `?좑툘 紐⑤뱺 異붿쿇 ?좎쭨??嫄곗젅(X) ?ы몴媛 ?덉뼱 ?좎쭨瑜??뺤젙?????놁뒿?덈떎. '???좎쭨???덈뤌???졼뀪'瑜??대┃?섏뿬 ?덈릺???쇱젙???쒖쇅??二쇱꽭??`,
++          `?좑툘 紐⑤뱺 異붿쿇 ?좎쭨??嫄곗젅(X) ?ы몴媛 ?덉뼱 ?좎쭨瑜??뺤젙?????놁뒿?덈떎. ?곷떒 '?쇱젙 議곗쑉' ?곸뿭???대┃?섏뿬 遺덇????쇱젙??議곗쑉??二쇱꽭??`,
+           true
+         );
+       }
+@@ -355,25 +397,52 @@ class MockRoomService implements IRoomService {
+     const room = await this.getRoom(roomId);
+     if (!room) throw new Error('諛⑹쓣 李얠쓣 ???놁뒿?덈떎.');
+ 
+-    // 異붿쿇 ?좎쭨 ?ш퀎??-    const newRecommendations = await this.calculateRecommendations(roomId);
+-    room.recommendedDates = newRecommendations;
+-    
+-    // ?ы몴 ?곗씠??珥덇린??-    room.votes = {};
+-    room.confirmedDate = null;
+-
+     const allUsers = await authService.getAllUsers();
+     const updater = allUsers.find(u => u.id === userId);
+     const updaterName = updater ? updater.nickname : '?꾧뎔媛';
+ 
+-    await this.sendMessage(
+-      roomId,
+-      'system',
+-      '?쒖뒪??,
+-      `?봽 ${updaterName}?섏씠 遺덇????쇱젙???덈줈 罹섎┛?붿뿉 ?낅뜲?댄듃?덉뒿?덈떎.\n?댁뿉 ?곕씪 異붿쿇 ?좎쭨媛 ?ш퀎?곕릺?덉쑝硫? 紐⑤뱺 ?ы몴媛 珥덇린?붾릺???덈줈???ы몴媛 ?쒖옉?섏뿀?듬땲??`,
+-      true
+-    );
++    // ???ъ슜?먯쓽 ?щ젰 議곗젙 ?곹깭 ?꾨즺 ?쒖떆
++    if (!room.calendarAdjusted) {
++      room.calendarAdjusted = {};
++      for (const mId of room.members) {
++        room.calendarAdjusted[mId] = false;
++      }
++    }
++    room.calendarAdjusted[userId] = true;
++
++    // ?꾩썝???꾨즺?덈뒗吏 寃??+    const everyoneAdjusted = room.members.every(mId => room.calendarAdjusted?.[mId] === true);
++
++    if (everyoneAdjusted) {
++      // 異붿쿇 ?좎쭨 ?ш퀎??+      const newRecommendations = await this.calculateRecommendations(roomId);
++      room.recommendedDates = newRecommendations;
++      
++      // ?ы몴 ?곗씠??諛??곹깭 珥덇린??+      room.votes = {};
++      room.confirmedDate = null;
++      room.calendarAdjusted = undefined;
++
++      await this.sendMessage(
++        roomId,
++        'system',
++        'system',
++        `?봽 紐⑤뱺 援ъ꽦?먯씠 遺덇????쇱젙???낅뜲?댄듃?덉뒿?덈떎!\n?댁뿉 ?곕씪 異붿쿇 ?좎쭨媛 ?덈∼寃?怨꾩궛?섏뿀?쇰ŉ, ?ы몴媛 ?꾩쟾??珥덇린?붾릺???ㅼ떆 ?쒖옉?섏뿀?듬땲??`,
++        true
++      );
++    } else {
++      // ?쇰?留??꾨즺???곹깭
++      const adjustedCount = room.members.filter(mId => room.calendarAdjusted?.[mId] === true).length;
++      const totalCount = room.members.length;
++
++      await this.sendMessage(
++        roomId,
++        'system',
++        '?쒖뒪??,
++        `?봽 ${updaterName}?섏씠 遺덇????쇱젙???낅뜲?댄듃?덉뒿?덈떎. (${adjustedCount}/${totalCount}紐??꾨즺. ?섎㉧吏 李몄뿬?먮뱾???쇱젙 議곗젙??湲곕떎由ш퀬 ?덉뒿?덈떎...)`,
++        true
++      );
++    }
+ 
+     await this.saveRoom(room);
+     return room;
+diff --git a/src/types/index.ts b/src/types/index.ts
+index eb69b72..04c7e87 100644
+--- a/src/types/index.ts
++++ b/src/types/index.ts
+@@ -2,6 +2,16 @@ export interface CalendarDayEvents {
+   [date: string]: boolean[]; // 24媛??щ’ (0??~ 23??
+ }
+ 
++export interface CalendarEventDetail {
++  id: string;
++  title: string;
++  startHour: number;
++  endHour: number;
++  startTimeStr?: string; // ?? "14:30"
++  endTimeStr?: string;   // ?? "15:15"
++  isAllDay: boolean;
++}
++
+ export type NoodleOrRice = 'NOODLE' | 'RICE';
+ export type CuisineType = 'KOREAN' | 'CHINESE' | 'JAPANESE' | 'WESTERN';
+ export type AlcoholLiquor = 'SOJU' | 'BEER' | 'COCKTAIL' | 'WHISKEY' | 'WINE' | 'HIGH_ALCOHOL' | 'MAKGEOLLI';
+@@ -44,6 +54,7 @@ export interface Room {
+   recommendedDates?: string[]; // 異붿쿇??3媛??좎쭨 (YYYY-MM-DD)
+   votes?: { [userId: string]: { [dateStr: string]: 'O' | 'X' } }; // ?ъ슜?먮퀎 ?ы몴 ?댁뿭
+   confirmedDate?: string | null; // ?뺤젙??紐⑥엫 ?좎쭨 (YYYY-MM-DD)
++  calendarAdjusted?: { [userId: string]: boolean }; // 援먯갑?곹깭 ???ъ슜?먮퀎 ?щ젰 議곗젙 ?꾨즺 ?щ?
+ }
+ 
+ export interface Message {

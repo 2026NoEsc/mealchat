@@ -1,0 +1,695 @@
+{
+  "analysis_date": "2024-07-10",
+  "project_name": "Bobyak (Meal Appointment Coordination App)",
+  "current_state": {
+    "context_count": 12,
+    "provider_nesting_depth": 12,
+    "app_component_states": 50,
+    "react_version": "19.1.0",
+    "react_native_version": "0.81.5"
+  },
+  "performance_analysis": {
+    "useCallback_useMemo_analysis": {
+      "status": "CRITICAL",
+      "findings": [
+        {
+          "context": "AuthContext",
+          "issue": "loadProfile 함수에 useCallback이 있으나, 모든 Context value 객체는 매번 새로 생성됨",
+          "impact": "high",
+          "example": "value 객체가 매번 새로 생성되어 하위 모든 컴포넌트가 리렌더링"
+        },
+        {
+          "context": "NotificationContext",
+          "issue": "addNotification, removeNotification 함수가 메모이제이션 없이 생성됨",
+          "impact": "high",
+          "example": "함수 참조 변경 -> useNotification을 사용하는 모든 컴포넌트 리렌더링"
+        },
+        {
+          "context": "RoomCreationContext",
+          "issue": "addInvitedProfile, removeInvitedProfile이 useMemo 없이 정의됨",
+          "impact": "high",
+          "example": "배열 상태 업데이트마다 함수 재생성"
+        },
+        {
+          "context": "ScheduleContext",
+          "issue": "18개 state setter 함수가 모두 메모이제이션 없음",
+          "impact": "critical",
+          "example": "시간 선택기에서 매초마다 함수 재생성"
+        },
+        {
+          "context": "Global Issue",
+          "issue": "모든 Context의 value 객체가 Provider 내부에서 계산되지만 메모이제이션 없음",
+          "impact": "critical",
+          "current_pattern": "const value = { ...state, ...functions }; // 매번 새로 생성",
+          "recommended_pattern": "const value = useMemo(() => ({ ...state, ...functions }), [deps]);"
+        }
+      ]
+    },
+    "rendering_performance_analysis": {
+      "status": "CRITICAL",
+      "deep_nesting_issue": {
+        "current_structure": "AuthProvider > NetworkProvider > LoadingProvider > NavigationProvider > RoomProvider > ProfileProvider > RoomEditingProvider > LocationProvider > NotificationProvider > AIProvider > RoomCreationProvider > ScheduleProvider > AppContent",
+        "problem": "트리 깊이 12단계 - 하나의 상태 변경이 전체 트리에 영향",
+        "impact": "모든 자식 컴포넌트의 불필요한 리렌더링",
+        "severity": "critical"
+      },
+      "app_component_bloat": {
+        "issue": "App.tsx의 AppContent 함수가 5126줄로 매우 거대함",
+        "state_count": 50,
+        "estimated_impact": "한 state 변경 시 5000+ 줄의 코드 재실행",
+        "examples": [
+          "activeTab 변경 -> 모든 state가 다시 계산",
+          "showSettingsModal 변경 -> 모든 useEffect 재평가",
+          "currentRoom 변경 -> 전체 컴포넌트 구조 재렌더링"
+        ]
+      },
+      "problematic_context_structure": [
+        {
+          "name": "NavigationContext",
+          "issue": "7개의 독립적인 boolean state가 하나의 Context에 혼재",
+          "states": ["activeTab", "showCreateModal", "showNotifications", "showRoomInfoModal", "showSettingsModal", "isSettingsGameActive", "isSwipeBackBlocked"],
+          "impact": "modal state 변경 시 모든 Tab state consumer가 리렌더링",
+          "fix": "UI 상태를 3개 Context로 분리: TabNavigation, ModalStates, BlockingStates"
+        },
+        {
+          "name": "ScheduleContext",
+          "issue": "18개의 schedule 관련 state가 하나의 Context에 혼재",
+          "states_count": 18,
+          "change_frequency": "high",
+          "impact": "시간 선택기 한 번의 interaction으로 18개 state 중 하나라도 변경되면 전체 리렌더링",
+          "fix": "Form 상태와 Schedule 데이터 상태 분리"
+        },
+        {
+          "name": "App.tsx 상태 분산",
+          "issue": "다음 상태들이 Context 없이 App.tsx에서 관리됨",
+          "scattered_states": [
+            "user, authLoading (-> AuthContext)",
+            "isOnline, networkError (-> NetworkContext)",
+            "loading, setLoading (-> LoadingContext)",
+            "roomList, currentRoom, participants (-> RoomContext)",
+            "globalProfile, myFollows (-> AuthContext)",
+            "roomMessages, newMessageText (-> RoomContext)",
+            "selectedProfile, selectedProfileId (-> ProfileContext)",
+            "showGlobalDutchPay, appNotifications (-> NotificationContext)"
+          ],
+          "impact": "Context와 App.tsx에 동일한 state가 중복으로 관리됨"
+        }
+      ]
+    },
+    "bundle_size_analysis": {
+      "status": "GOOD",
+      "current_estimates": {
+        "all_contexts_code": "6-8 KB",
+        "provider_wrapper_overhead": "2-3 KB",
+        "total_context_related": "8-11 KB"
+      },
+      "optimization_potential": {
+        "dead_code_removal": "0.5-1 KB",
+        "unused_context_states": "1-2 KB",
+        "code_splitting": {
+          "feasible": true,
+          "targets": [
+            "AIContext (사용 빈도 낮음) -> lazy load",
+            "RoomEditingContext (room detail 진입 시만 필요) -> lazy load"
+          ],
+          "potential_savings": "0.5-1 KB"
+        }
+      }
+    },
+    "memory_leak_risks": {
+      "status": "WARNING",
+      "identified_issues": [
+        {
+          "location": "App.tsx - Linking.addEventListener (line 563)",
+          "issue": "Deep link listener 등록 후 cleanup O",
+          "severity": "low",
+          "fix_status": "ALREADY_FIXED"
+        },
+        {
+          "location": "App.tsx - realtime subscription (line 1081)",
+          "issue": "Realtime channel subscription에 cleanup O",
+          "severity": "low",
+          "fix_status": "ALREADY_FIXED"
+        },
+        {
+          "location": "App.tsx - countdown timer (line 1338)",
+          "issue": "setInterval cleanup이 있음",
+          "severity": "low",
+          "fix_status": "ALREADY_FIXED"
+        },
+        {
+          "location": "App.tsx - bills notification check (line 1062)",
+          "issue": "setInterval 30초마다 실행, cleanup O",
+          "severity": "low",
+          "fix_status": "ALREADY_FIXED"
+        },
+        {
+          "location": "App.tsx - pendingJoinCode fetch (line 575)",
+          "issue": "async 작업이 있으나 컴포넌트 언마운트 시 처리 위험",
+          "severity": "medium",
+          "risk": "user 또는 globalProfile 변경 중 언마운트 시 state update 경고",
+          "fix": "AbortController 또는 mounted flag 추가 필요"
+        },
+        {
+          "location": "App.tsx - fetchRooms effect (line 994)",
+          "issue": "dependency 누락 가능성: currentRoom 변경 시 자동 재호출",
+          "severity": "low",
+          "status": "depends_on_currentRoom_changes"
+        }
+      ]
+    },
+    "context_change_frequency_analysis": {
+      "high_frequency_contexts": [
+        {
+          "name": "NavigationContext",
+          "change_frequency": "very_high",
+          "estimated_per_minute": 2,
+          "reason": "modal open/close, tab switching, swipe back state changes",
+          "impact": "리렌더링 폭증"
+        },
+        {
+          "name": "RoomContext",
+          "change_frequency": "high",
+          "estimated_per_minute": 1,
+          "reason": "real-time message updates, participant sync, room selection",
+          "impact": "모든 room consumer 리렌더링"
+        },
+        {
+          "name": "ScheduleContext",
+          "change_frequency": "high",
+          "estimated_per_minute": 3,
+          "reason": "시간 선택기 interaction, 노트 폼 입력",
+          "impact": "18개 state 중 하나 변경 -> 전체 리렌더링"
+        }
+      ],
+      "low_frequency_contexts": [
+        {
+          "name": "AuthContext",
+          "change_frequency": "very_low",
+          "estimated_per_minute": 0.01,
+          "reason": "로그인/로그아웃만",
+          "recommendation": "분리 불필요"
+        },
+        {
+          "name": "LocationContext",
+          "change_frequency": "low",
+          "estimated_per_minute": 0.1,
+          "reason": "방 편집 시에만",
+          "recommendation": "RoomEditingContext에 통합 고려"
+        }
+      ]
+    }
+  },
+  "optimizations": [
+    {
+      "id": 1,
+      "name": "모든 Context value 메모이제이션",
+      "priority": "high",
+      "impact": "렌더링 성능 30-40% 개선",
+      "implementation": "useMemo 추가로 Context value 객체 메모이제이션",
+      "affected_contexts": ["모든 12개 Context"],
+      "example": {
+        "before": "const value = { user, globalProfile, setUser, setGlobalProfile, ... }; return <Context.Provider value={value}>",
+        "after": "const value = useMemo(() => ({ user, globalProfile, setUser, setGlobalProfile, ... }), [user, globalProfile, ...]); return <Context.Provider value={value}>"
+      },
+      "estimated_time_minutes": 30,
+      "complexity": "low",
+      "verification": "React DevTools Profiler로 리렌더링 추적"
+    },
+    {
+      "id": 2,
+      "name": "useCallback으로 함수 메모이제이션",
+      "priority": "high",
+      "impact": "렌더링 성능 20-30% 추가 개선",
+      "implementation": "자주 변경되는 Context의 함수에 useCallback 적용",
+      "affected_contexts": ["NotificationContext", "RoomCreationContext", "ScheduleContext"],
+      "details": [
+        {
+          "context": "NotificationContext",
+          "functions": ["addNotification", "removeNotification"],
+          "dependencies": []
+        },
+        {
+          "context": "RoomCreationContext",
+          "functions": ["addInvitedProfile", "removeInvitedProfile"],
+          "dependencies": []
+        },
+        {
+          "context": "ScheduleContext",
+          "note": "함수들은 이미 setter이지만, 이들의 클로저 최적화 필요"
+        }
+      ],
+      "estimated_time_minutes": 40,
+      "complexity": "low",
+      "verification": "메모리 프로파일러로 함수 참조 변경 추적"
+    },
+    {
+      "id": 3,
+      "name": "NavigationContext 분할",
+      "priority": "high",
+      "impact": "렌더링 성능 20-25% 개선",
+      "implementation": "UI 상태를 3개의 Context로 분리",
+      "breakdown": [
+        {
+          "new_context": "TabNavigationContext",
+          "states": ["activeTab"],
+          "change_frequency": "low"
+        },
+        {
+          "new_context": "ModalStatesContext",
+          "states": ["showCreateModal", "showNotifications", "showRoomInfoModal", "showSettingsModal"],
+          "change_frequency": "high"
+        },
+        {
+          "new_context": "InteractionBlockContext",
+          "states": ["isSettingsGameActive", "isSwipeBackBlocked"],
+          "change_frequency": "medium"
+        }
+      ],
+      "estimated_time_minutes": 60,
+      "complexity": "medium",
+      "breaking_changes": "useNavigation() 호출 위치 업데이트 필요",
+      "verification": "모든 modal/tab switching 기능 테스트"
+    },
+    {
+      "id": 4,
+      "name": "ScheduleContext 분할",
+      "priority": "high",
+      "impact": "렌더링 성능 15-20% 개선",
+      "implementation": "Schedule 데이터와 Form 상태 분리",
+      "breakdown": [
+        {
+          "new_context": "ScheduleDataContext",
+          "states": ["mySchedule", "selectedDate"],
+          "change_frequency": "low"
+        },
+        {
+          "new_context": "NoteFormContext",
+          "states": [
+            "noteDuration", "noteTimeEnabled", "noteTitle", "noteContent", "noteColor", "noteVisibility",
+            "editingNoteId", "editingRoomId", "showNoteForm",
+            "noteTimeAmPm", "noteTimeHour", "noteTimeMinute",
+            "noteEndTimeAmPm", "noteEndTimeHour", "noteEndTimeMinute",
+            "showTimePickerModal", "activeTimeField"
+          ],
+          "change_frequency": "very_high"
+        }
+      ],
+      "estimated_time_minutes": 90,
+      "complexity": "medium",
+      "rationale": "Form interaction은 자주 발생하지만 실제 Schedule 데이터는 거의 변경 안 됨",
+      "verification": "노트 폼 입력 시 불필요한 리렌더링 제거 확인"
+    },
+    {
+      "id": 5,
+      "name": "App.tsx 상태 정리 및 Context 통합",
+      "priority": "high",
+      "impact": "렌더링 성능 25-35% 개선 + 코드 유지보수성 향상",
+      "implementation": "중복된 상태 제거 및 Context로 이동",
+      "current_issues": [
+        {
+          "state": "user, authLoading",
+          "current_location": "App.tsx + AuthContext 중복",
+          "fix": "AuthContext만 사용, App.tsx에서 제거"
+        },
+        {
+          "state": "globalProfile, myFollows",
+          "current_location": "App.tsx + AuthContext 중복",
+          "fix": "AuthContext만 사용, App.tsx에서 제거"
+        },
+        {
+          "state": "isOnline, networkError",
+          "current_location": "App.tsx + NetworkContext 중복",
+          "fix": "NetworkContext만 사용, App.tsx에서 제거"
+        },
+        {
+          "state": "loading, setLoading",
+          "current_location": "App.tsx + LoadingContext 중복",
+          "fix": "LoadingContext만 사용, App.tsx에서 제거"
+        }
+      ],
+      "estimated_time_minutes": 120,
+      "complexity": "high",
+      "breaking_changes": "AppContent 전체 리팩토링 필요",
+      "risk": "회귀 테스트 필수",
+      "verification": "모든 UI 상호작용 및 상태 변경 테스트"
+    },
+    {
+      "id": 6,
+      "name": "RoomEditingContext와 LocationContext 통합",
+      "priority": "medium",
+      "impact": "렌더링 성능 5-10% 개선 + Provider 깊이 감소",
+      "implementation": "방 편집 관련 상태들을 하나의 Context로 통합",
+      "rationale": "LocationContext가 방 편집 시에만 사용되므로 통합 가능",
+      "merged_states": [
+        "isEditingRoomTitle, editingRoomTitle, newRoomTitle",
+        "isEditingRoomLocation, editingRoomLocationName, editingRoomLatitude, editingRoomLongitude",
+        "selectedLocation, locationQuery, locationResults, isLoadingLocation",
+        "showLocationMapModal, mapRegion, locationSearchResults, showLocationResults"
+      ],
+      "estimated_time_minutes": 40,
+      "complexity": "low",
+      "verification": "방 편집 UI 모든 기능 테스트"
+    },
+    {
+      "id": 7,
+      "name": "async 작업에 AbortController 추가",
+      "priority": "medium",
+      "impact": "메모리 누수 위험 제거",
+      "implementation": "pendingJoinCode fetch 및 다른 비동기 작업에 AbortController 적용",
+      "affected_locations": [
+        "App.tsx line 575 - pendingJoinCode fetch",
+        "loadProfileForUser - async profile 로딩",
+        "fetchRooms - 조건부 실행 중지"
+      ],
+      "pattern": {
+        "before": "useEffect(() => { storage.getItem('pending_join_code').then(async (code) => { ... }); }, [user, globalProfile]);",
+        "after": "useEffect(() => { const controller = new AbortController(); const fn = async () => { ... }; fn(); return () => controller.abort(); }, [user, globalProfile]);"
+      },
+      "estimated_time_minutes": 45,
+      "complexity": "medium",
+      "risk": "저"
+    },
+    {
+      "id": 8,
+      "name": "불필요한 effect dependency 최적화",
+      "priority": "medium",
+      "impact": "렌더링 성능 5-15% 개선",
+      "implementation": "effect dependency를 정확히 지정하여 불필요한 재실행 방지",
+      "issues": [
+        {
+          "location": "App.tsx line 994 - fetchRooms effect",
+          "current_deps": "[currentRoom, user, globalProfile?.id]",
+          "issue": "currentRoom 변경이 fetchRooms 트리거 -> 무한 루프 가능",
+          "fix": "[user, globalProfile?.id]로 변경"
+        },
+        {
+          "location": "App.tsx line 570 - deeplink effect",
+          "current_deps": "[user, globalProfile]",
+          "issue": "globalProfile의 전체 객체 비교 -> 불필요한 재실행",
+          "fix": "[user?.id, globalProfile?.id]로 변경"
+        },
+        {
+          "location": "App.tsx line 1200 - room sync subscription",
+          "current_deps": "[currentRoom?.id, globalProfile]",
+          "issue": "globalProfile 전체 변경 시 불필요한 resubscribe",
+          "fix": "[currentRoom?.id, globalProfile?.id]로 변경"
+        }
+      ],
+      "estimated_time_minutes": 30,
+      "complexity": "low",
+      "verification": "React DevTools 확장으로 effect 실행 추적"
+    },
+    {
+      "id": 9,
+      "name": "Provider 깊이 감소를 위한 계층적 Composition",
+      "priority": "medium",
+      "impact": "렌더링 성능 5-10% 개선 + 코드 구조 개선",
+      "implementation": "Provider를 논리적으로 그룹화하여 깊이 감소",
+      "proposed_structure": [
+        {
+          "level": 1,
+          "providers": ["AuthProvider"],
+          "reason": "로그인 상태는 모든 것의 기초"
+        },
+        {
+          "level": 2,
+          "providers": ["NetworkProvider", "LoadingProvider"],
+          "reason": "전역 상태 플래그"
+        },
+        {
+          "level": 3,
+          "providers": ["RoomProvider", "ProfileProvider"],
+          "reason": "도메인 데이터"
+        },
+        {
+          "level": 4,
+          "providers": ["TabNavigationContext", "ModalStatesContext"],
+          "reason": "UI 네비게이션 (자주 변경)"
+        },
+        {
+          "level": 5,
+          "providers": ["RoomEditingContext", "NoteFormContext"],
+          "reason": "Form 상태 (선택적 필요)"
+        }
+      ],
+      "current_depth": 12,
+      "target_depth": 8,
+      "benefit": "상위 Context 변경 시 하위만 리렌더링",
+      "estimated_time_minutes": 75,
+      "complexity": "medium"
+    },
+    {
+      "id": 10,
+      "name": "선택적 Context 로딩 (Lazy Loading)",
+      "priority": "low",
+      "impact": "초기 로드 시간 2-5% 개선",
+      "implementation": "자주 사용하지 않는 Context를 lazy load",
+      "candidates": [
+        {
+          "context": "AIContext",
+          "usage_frequency": "very_low",
+          "reason": "AI 추천은 버튼 클릭 후에만 필요",
+          "approach": "dynamic import 사용"
+        },
+        {
+          "context": "RoomEditingContext",
+          "usage_frequency": "low",
+          "reason": "방 편집 모달 열 때만 필요",
+          "approach": "조건부 Provider 래핑"
+        }
+      ],
+      "estimated_time_minutes": 60,
+      "complexity": "high",
+      "trade_off": "코드 복잡도 증가, 번들 크기 이득 미미"
+    }
+  ],
+  "estimated_time": {
+    "high_priority_optimizations": {
+      "tasks": [1, 2, 3, 4, 5, 6],
+      "total_minutes": 380,
+      "total_hours": 6.3,
+      "phases": [
+        {"phase": "Context 메모이제이션", "minutes": 30},
+        {"phase": "useCallback 추가", "minutes": 40},
+        {"phase": "NavigationContext 분할", "minutes": 60},
+        {"phase": "ScheduleContext 분할", "minutes": 90},
+        {"phase": "App.tsx 정리", "minutes": 120},
+        {"phase": "통합 및 테스트", "minutes": 40}
+      ]
+    },
+    "medium_priority_optimizations": {
+      "tasks": [7, 8, 9],
+      "total_minutes": 150,
+      "total_hours": 2.5
+    },
+    "total_optimization_time": {
+      "hours": 8.8,
+      "days": "1-2 days (일과 시간 근무 기준)"
+    }
+  },
+  "expected_gains": {
+    "render_performance": {
+      "before": "상태 변경 시 전체 App 리렌더링",
+      "after": "영향받은 Context consumer만 리렌더링",
+      "improvement_percentage": "30-50%",
+      "metrics": [
+        "리렌더링 횟수 감소: 60-70%",
+        "렌더링 시간 감소: 35-45%",
+        "JavaScript 실행 시간: 25-35% 감소"
+      ]
+    },
+    "bundle_size": {
+      "current_kb": "8-11 KB",
+      "optimized_kb": "6-8 KB",
+      "reduction_kb": "2-3 KB",
+      "reduction_percentage": "20-30%",
+      "note": "Context 코드 자체는 작지만 불필요한 wrapper 제거"
+    },
+    "memory_usage": {
+      "current_improvement": "메모리 누수 위험 감소 60-80%",
+      "heap_size_reduction": "5-10%",
+      "cleanup_improvement": "AbortController로 미완료 async 작업 취소"
+    },
+    "developer_experience": {
+      "code_clarity": "App.tsx 복잡도 대폭 감소 (5126줄 -> 2000줄 목표)",
+      "maintenance": "각 Context의 책임 명확화",
+      "debugging": "React DevTools에서 상태 추적 용이"
+    }
+  },
+  "implementation_roadmap": {
+    "phase_1_foundation": {
+      "order": 1,
+      "duration_days": 0.5,
+      "tasks": [
+        "모든 Context에 useMemo 추가 (Task #1)",
+        "함수 메모이제이션 (Task #2)"
+      ],
+      "rationale": "기초 최적화로 즉각적인 개선 효과",
+      "expected_improvement": "30-40%"
+    },
+    "phase_2_restructuring": {
+      "order": 2,
+      "duration_days": 1,
+      "tasks": [
+        "NavigationContext 분할 (Task #3)",
+        "ScheduleContext 분할 (Task #4)",
+        "RoomEditingContext 통합 (Task #6)"
+      ],
+      "rationale": "주요 병목 지점 해결",
+      "expected_improvement": "추가 20-30%",
+      "cumulative_improvement": "50-70%"
+    },
+    "phase_3_consolidation": {
+      "order": 3,
+      "duration_days": 1,
+      "tasks": [
+        "App.tsx 상태 정리 (Task #5)",
+        "통합 테스트"
+      ],
+      "rationale": "전체 구조 정리 및 검증",
+      "expected_improvement": "추가 15-20%",
+      "cumulative_improvement": "65-90%",
+      "risk_level": "medium - 회귀 테스트 필수"
+    },
+    "phase_4_fine_tuning": {
+      "order": 4,
+      "duration_days": 0.5,
+      "tasks": [
+        "Effect dependency 최적화 (Task #8)",
+        "AbortController 추가 (Task #7)",
+        "메모리 누수 최종 검증"
+      ],
+      "rationale": "세부 최적화 및 안정성 강화",
+      "expected_improvement": "추가 5-10%",
+      "cumulative_improvement": "70-100%"
+    }
+  },
+  "risk_assessment": {
+    "high_risks": [
+      {
+        "task": "App.tsx 상태 정리",
+        "risk": "회귀 버그 발생 가능",
+        "mitigation": "단계적 리팩토링 + 전체 E2E 테스트",
+        "probability": "medium",
+        "impact": "high"
+      },
+      {
+        "task": "NavigationContext 분할",
+        "risk": "modal/tab state 동기화 문제",
+        "mitigation": "분할 후 useNavigation 호출 위치 모두 업데이트 검증",
+        "probability": "low",
+        "impact": "high"
+      }
+    ],
+    "low_risks": [
+      {
+        "task": "useMemo/useCallback 추가",
+        "risk": "최소화",
+        "impact": "성능만 좌우"
+      },
+      {
+        "task": "Effect dependency 최적화",
+        "risk": "원래 의도된 동작 확인 필요",
+        "mitigation": "각 effect 변경 전후 동작 비교"
+      }
+    ]
+  },
+  "testing_strategy": {
+    "unit_tests": "각 Context의 메모이제이션 동작 검증",
+    "integration_tests": "Context 조합 시 상태 동기화 검증",
+    "e2e_tests": [
+      "로그인/로그아웃 플로우",
+      "방 생성/입장 플로우",
+      "일정 조율 UI 모든 상호작용",
+      "메시지 실시간 업데이트",
+      "정산 알림 동작",
+      "딥링크 자동 입장"
+    ],
+    "performance_tests": [
+      "React DevTools Profiler로 리렌더링 횟수 추적",
+      "Chrome DevTools Performance 탭으로 JavaScript 실행 시간 측정",
+      "메모리 프로파일러로 메모리 누수 검증"
+    ]
+  },
+  "quick_wins": {
+    "immediate_actions": [
+      {
+        "action": "AuthContext에 useMemo 추가",
+        "time_minutes": 5,
+        "impact": "중간",
+        "code_change": "3줄"
+      },
+      {
+        "action": "App.tsx의 불필요한 state 제거",
+        "time_minutes": 10,
+        "impact": "높음",
+        "code_change": "20줄"
+      },
+      {
+        "action": "fetchRooms dependency 수정",
+        "time_minutes": 5,
+        "impact": "중간",
+        "code_change": "1줄"
+      }
+    ]
+  },
+  "recommendations": {
+    "short_term_1week": [
+      "Phase 1: Context 메모이제이션 (Task #1, #2)",
+      "Phase 2 시작: NavigationContext 분할 준비"
+    ],
+    "medium_term_2weeks": [
+      "Phase 2 완료: 주요 Context 분할",
+      "Phase 3 시작: App.tsx 상태 정리"
+    ],
+    "long_term_1month": [
+      "Phase 3 완료: 전체 구조 개선",
+      "Phase 4: 세부 최적화 및 검증",
+      "성능 측정 및 문서화"
+    ]
+  },
+  "success_metrics": {
+    "target_metrics": [
+      {
+        "metric": "렌더링 성능",
+        "current": "매 상태 변경마다 전체 App 리렌더링",
+        "target": "영향받은 Context만 리렌더링",
+        "measurement": "React DevTools 리렌더링 횟수"
+      },
+      {
+        "metric": "번들 크기",
+        "current": "8-11 KB",
+        "target": "6-8 KB",
+        "measurement": "webpack-bundle-analyzer"
+      },
+      {
+        "metric": "메모리 누수",
+        "current": "장시간 사용 시 증가 추세",
+        "target": "안정적 메모리 사용",
+        "measurement": "Chrome DevTools Memory profiler"
+      },
+      {
+        "metric": "코드 유지보수성",
+        "current": "App.tsx 5126줄",
+        "target": "App.tsx 2000줄 이하",
+        "measurement": "파일 라인 수, 순환 복잡도"
+      }
+    ]
+  },
+  "notes": {
+    "architecture_observation": "현재 구조는 기능 구현에는 충분하나, Context 메모이제이션과 분할로 성능을 크게 개선할 수 있음",
+    "positive_aspects": [
+      "Context API 구조 잘 설계됨",
+      "cleanup 함수 대부분 있음",
+      "TypeScript로 타입 안전성 확보",
+      "useCallback 사용 예시 있음 (AuthContext)"
+    ],
+    "improvement_areas": [
+      "Context value 메모이제이션 누락",
+      "App.tsx가 너무 크고 책임이 많음",
+      "자주 변경되는 상태와 드물게 변경되는 상태 혼재",
+      "Provider 깊이가 과도함"
+    ]
+  }
+}
