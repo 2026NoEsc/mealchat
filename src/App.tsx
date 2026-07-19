@@ -3930,9 +3930,7 @@ ${inviteLink}
                         </View>
                       </View>
                     )}
-
                   </View>
-                </View>
                 )}
               </View>
             ) : (
