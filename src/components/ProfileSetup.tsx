@@ -1319,50 +1319,108 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
             <Text style={styles.settingsBackButtonText}>◀ 뒤로 가기</Text>
           </TouchableOpacity>
 
-          {/* Profile Card */}
-          <View style={styles.profileCard}>
-            <TouchableOpacity 
-              style={styles.avatarContainer}
+          {/* Profile Card Container - Improved */}
+          <View style={styles.profileCardContainer}>
+            {/* Avatar - 80x80 */}
+            <TouchableOpacity
+              style={styles.profileAvatarTouchable}
               onPress={() => setZoomModalVisible(true)}
               activeOpacity={0.9}
             >
-              <View style={[styles.avatarFrame, { borderColor: avatarColor, backgroundColor: avatarUrl ? `${avatarColor}20` : profileBgColor, width: 72, height: 72, borderRadius: 36, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]}>
+              <View style={[styles.profileAvatar, { backgroundColor: avatarColor || THEME.primary }]}>
                 {avatarUrl ? (
                   <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
                 ) : (
-                  <Text style={{ fontSize: 36 }}>{profileEmoji}</Text>
+                  <Text style={styles.profileAvatarText}>{name?.[0]?.toUpperCase() || 'U'}</Text>
                 )}
               </View>
-              <Text style={styles.profileCardName}>{name}#{tag}</Text>
-              {bio ? <Text style={styles.profileCardBio}>"{bio}"</Text> : null}
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            {/* Name */}
+            <Text style={styles.profileName}>{name}</Text>
 
-            {/* Details */}
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>생년월일</Text>
-              <Text style={styles.detailValue}>{formattedBirthdate}</Text>
-            </View>
+            {/* Tag */}
+            <Text style={styles.profileTag}>@{tag}</Text>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>성별</Text>
-              <Text style={styles.detailValue}>
-                {gender === 'male' ? '남성' : gender === 'female' ? '여성' : '선택안함'}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>송금 계좌</Text>
-              <Text style={styles.detailValue}>{fullBankAccount}</Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>음식 취향</Text>
-              <Text style={styles.detailValue}>{getFoodTasteSummary()}</Text>
-            </View>
-
+            {/* Edit Button */}
+            <TouchableOpacity
+              style={styles.profileEditButton}
+              onPress={() => {
+                setActiveSubTab('settings');
+                setActiveSettingSection('profile');
+              }}
+            >
+              <Text style={styles.profileEditButtonText}>프로필 편집</Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Food Preferences Section */}
+          {(selectedAllergies?.length > 0 || selectedDiseases?.length > 0 || selectedDislikes?.length > 0) && (
+            <View style={styles.foodPrefSection}>
+              <Text style={styles.foodPrefTitle}>음식 취향</Text>
+              <View style={styles.foodPrefChips}>
+                {selectedAllergies && selectedAllergies.map((allergy, i) => (
+                  <View key={`allergy-${i}`} style={styles.foodChip}>
+                    <Text style={styles.foodChipText}>⚠️ {allergy}</Text>
+                  </View>
+                ))}
+                {selectedDiseases && selectedDiseases.map((disease, i) => (
+                  <View key={`disease-${i}`} style={styles.foodChip}>
+                    <Text style={styles.foodChipText}>🩺 {disease}</Text>
+                  </View>
+                ))}
+                {selectedDislikes && selectedDislikes.map((dislike, i) => (
+                  <View key={`dislike-${i}`} style={styles.foodChip}>
+                    <Text style={styles.foodChipText}>{dislike}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Friends List Section */}
+          {follows && follows.length > 0 && (
+            <View style={styles.friendListSection}>
+              <View style={styles.friendListHeader}>
+                <Text style={styles.friendListTitle}>친구 목록 ({follows.length})</Text>
+                <TouchableOpacity
+                  onPress={() => setActiveSubTab('follows')}
+                  style={styles.friendListAddBtn}
+                >
+                  <Plus size={20} color={THEME.menuNeeded} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 300 }}>
+                {follows.map((follow) => {
+                  const friend = follow.profiles;
+                  if (!friend) return null;
+
+                  return (
+                    <View key={follow.id} style={styles.friendListItem}>
+                      <View style={[styles.friendAvatar, { backgroundColor: friend.avatar_color || THEME.primary }]}>
+                        {friend.avatar_url ? (
+                          <Image source={{ uri: friend.avatar_url }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
+                        ) : (
+                          <Text style={styles.friendAvatarText}>{friend.name?.[0]?.toUpperCase()}</Text>
+                        )}
+                      </View>
+                      <View style={styles.friendInfo}>
+                        <Text style={styles.friendName}>{friend.name}</Text>
+                        <Text style={styles.friendTag}>@{friend.tag}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.unfollowBtn}
+                        onPress={() => handleUnfollow(follow.id, friend.name)}
+                      >
+                        <Text style={styles.unfollowBtnText}>언팔로우</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Account completion tutorial checklist */}
           <View style={styles.tutorialCard}>
@@ -2775,6 +2833,158 @@ const styles = StyleSheet.create({
     color: THEME.text,
     fontWeight: 'bold'
   },
+  // Improved Profile UI Styles
+  profileCardContainer: {
+    backgroundColor: THEME.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileAvatarTouchable: {
+    marginBottom: 12,
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  profileAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.text,
+    marginBottom: 4,
+  },
+  profileTag: {
+    fontSize: 14,
+    color: THEME.textMuted,
+    marginBottom: 12,
+  },
+  profileEditButton: {
+    backgroundColor: THEME.menuNeeded,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  profileEditButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  foodPrefSection: {
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  foodPrefTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  foodPrefChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  foodChip: {
+    backgroundColor: THEME.menuNeeded + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.menuNeeded,
+  },
+  foodChipText: {
+    fontSize: 12,
+    color: THEME.text,
+  },
+  friendListSection: {
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  friendListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  friendListTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  friendListAddBtn: {
+    padding: 4,
+  },
+  friendListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  friendAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  friendAvatarText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  friendTag: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  unfollowBtn: {
+    borderWidth: 1,
+    borderColor: THEME.menuNeeded,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  unfollowBtnText: {
+    color: THEME.menuNeeded,
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+
   prefSection: {
     marginTop: 10
   },
