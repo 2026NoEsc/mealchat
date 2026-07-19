@@ -3341,8 +3341,41 @@ ${inviteLink}
                   </View>
                 </View>
 
+                {/* 참여자 정보 헤더 */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ height: 60, paddingVertical: 8 }}
+                  contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
+                >
+                  {participants.map(p => (
+                    <View
+                      key={p.id}
+                      style={{ alignItems: 'center' }}
+                    >
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: p.avatar_color,
+                          justifyContent: 'center',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                          {p.name[0]}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 10, marginTop: 4, color: THEME.textMuted }}>
+                        {p.name}
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+
                 {/* Main Body - Live chatroom or drop down active panel */}
-                <View 
+                <View
                   style={{ flex: 1, position: 'relative' }}
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
@@ -3364,6 +3397,15 @@ ${inviteLink}
                             const prevMsg = index > 0 ? roomMessages[index - 1] : null;
                             const isSameSender = prevMsg && prevMsg.sender_id === msg.sender_id;
                             const showAvatar = !isMe && !isSameSender;
+
+                            // Message time formatting
+                            const messageTime = msg.created_at
+                              ? new Date(msg.created_at).toLocaleTimeString('ko-KR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: false
+                                })
+                              : '';
 
                             return (
                               <View key={msg.id} style={[styles.chatRow, isMe ? styles.chatRowMe : styles.chatRowOther]}>
@@ -3390,17 +3432,37 @@ ${inviteLink}
                                       const imageSource = EMOTICONS_MAP[key];
                                       if (imageSource) {
                                         return (
-                                          <View style={styles.chatEmoticonBubble}>
-                                            <Image source={imageSource} style={styles.chatEmoticonImage} />
+                                          <View>
+                                            <View style={styles.chatEmoticonBubble}>
+                                              <Image source={imageSource} style={styles.chatEmoticonImage} />
+                                            </View>
+                                            {messageTime && (
+                                              <Text style={styles.chatMessageTime}>{messageTime}</Text>
+                                            )}
                                           </View>
                                         );
                                       }
                                     }
                                     return (
-                                      <View style={[styles.chatBubble, isMe ? styles.chatBubbleMe : styles.chatBubbleOther]}>
-                                        <Text style={[styles.chatText, isMe ? styles.chatTextMe : styles.chatTextOther]}>
-                                          {msg.message}
-                                        </Text>
+                                      <View>
+                                        <View
+                                          style={[
+                                            styles.chatBubble,
+                                            isMe
+                                              ? styles.chatBubbleMe
+                                              : {
+                                                  ...styles.chatBubbleOther,
+                                                  backgroundColor: msg.sender_color ? msg.sender_color + '20' : THEME.surface
+                                                }
+                                          ]}
+                                        >
+                                          <Text style={[styles.chatText, isMe ? styles.chatTextMe : styles.chatTextOther]}>
+                                            {msg.message}
+                                          </Text>
+                                        </View>
+                                        {messageTime && (
+                                          <Text style={styles.chatMessageTime}>{messageTime}</Text>
+                                        )}
                                       </View>
                                     );
                                   })()}
@@ -5238,6 +5300,12 @@ const styles = StyleSheet.create({
   chatTextOther: {
     color: THEME.text
   },
+  chatMessageTime: {
+    fontSize: 12,
+    color: THEME.textTertiary,
+    marginTop: 4,
+    marginLeft: 8
+  },
   chatInputBar: {
     flexDirection: 'row',
     backgroundColor: THEME.surface,
@@ -5522,11 +5590,11 @@ const styles = StyleSheet.create({
   },
   chatEmoticonBubble: {
     padding: 2,
-    marginVertical: 4,
+    marginVertical: 8,
   },
   chatEmoticonImage: {
-    width: 90,
-    height: 90,
+    width: 60,
+    height: 60,
     resizeMode: 'contain',
   },
 });
