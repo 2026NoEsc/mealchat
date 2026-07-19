@@ -3071,6 +3071,29 @@ ${inviteLink}
     }
   };
 
+  // Menu selection data calculation
+  const getMenuProgress = () => {
+    const selectedCount = participants.filter(p => p.voted_items && p.voted_items.length > 0).length;
+    const totalCount = participants.length;
+    return { selectedCount, totalCount };
+  };
+
+  // Get all unique selected menus
+  const getAllSelectedMenus = () => {
+    const menuSet = new Set<string>();
+    participants.forEach(p => {
+      if (p.voted_items) {
+        p.voted_items.forEach(item => menuSet.add(item));
+      }
+    });
+    return Array.from(menuSet);
+  };
+
+  // Get vote count for each menu
+  const getMenuVoteCount = (menuName: string) => {
+    return participants.filter(p => p.voted_items && p.voted_items.includes(menuName)).length;
+  };
+
   // 1. Offline Loading Screen
   if (!isOnline) {
     return <LoadingScreen isOffline={true} onRetry={handleRetryConnection} />;
@@ -3374,15 +3397,203 @@ ${inviteLink}
                   ))}
                 </ScrollView>
 
-                {/* Main Body - Live chatroom or drop down active panel */}
-                <View
-                  style={{ flex: 1, position: 'relative' }}
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                >
+                {/* Main Body - Menu Tab or Live chatroom or drop down active panel */}
+                {roomSubTab === 'menu' ? (
+                  // Menu Tab UI
+                  <View style={{ flex: 1, backgroundColor: THEME.background }}>
+                    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+                      {/* 현황 표시 */}
+                      {(() => {
+                        const { selectedCount, totalCount } = getMenuProgress();
+                        const progressPercentage = totalCount > 0 ? (selectedCount / totalCount) * 100 : 0;
 
-                  {/* Chatroom view */}
-                  <View style={{ flex: 1 }}>
+                        return (
+                          <View style={{ paddingVertical: 12, marginBottom: 16 }}>
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                              메뉴 선정
+                            </Text>
+                            <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
+                              {selectedCount}명 중 {selectedCount}명 선정 완료
+                            </Text>
+                            {/* 진행도 바 */}
+                            <View
+                              style={{
+                                height: 6,
+                                backgroundColor: THEME.border,
+                                borderRadius: 3,
+                                marginTop: 8,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <View
+                                style={{
+                                  height: '100%',
+                                  width: `${progressPercentage}%`,
+                                  backgroundColor: THEME.menuComplete,
+                                }}
+                              />
+                            </View>
+                          </View>
+                        );
+                      })()}
+
+                      {/* AI 추천 메뉴 섹션 */}
+                      {aiRecommendations.length > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: THEME.menuNeeded + '10',
+                            borderLeftWidth: 4,
+                            borderLeftColor: THEME.menuNeeded,
+                            padding: 12,
+                            borderRadius: 8,
+                            marginBottom: 16,
+                          }}
+                        >
+                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text }}>
+                            🤖 AI 추천 메뉴
+                          </Text>
+                          <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
+                            AI가 분석한 최고의 메뉴 선택지입니다.
+                          </Text>
+                          <TouchableOpacity
+                            style={{
+                              marginTop: 10,
+                              paddingVertical: 8,
+                              backgroundColor: THEME.menuNeeded,
+                              borderRadius: 6,
+                              alignItems: 'center',
+                            }}
+                            onPress={handleRunAIRecommendations}
+                          >
+                            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
+                              추천 메뉴 보기
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* 선택된 메뉴 카드 */}
+                      {(() => {
+                        const menus = getAllSelectedMenus();
+                        return menus.length > 0 ? (
+                          <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
+                              선택된 메뉴
+                            </Text>
+                            {menus.map(menuName => {
+                              const voteCount = getMenuVoteCount(menuName);
+                              const isCurrentUserSelected = currentParticipant?.voted_items?.includes(menuName);
+
+                              return (
+                                <TouchableOpacity
+                                  key={menuName}
+                                  style={{
+                                    backgroundColor: isCurrentUserSelected ? THEME.menuComplete : THEME.surface,
+                                    borderWidth: 2,
+                                    borderColor: isCurrentUserSelected ? THEME.menuComplete : THEME.border,
+                                    borderRadius: 12,
+                                    padding: 12,
+                                    marginBottom: 8,
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                  }}
+                                  onPress={() => {
+                                    if (currentParticipant) {
+                                      const newVotes = currentParticipant.voted_items || [];
+                                      if (newVotes.includes(menuName)) {
+                                        newVotes.splice(newVotes.indexOf(menuName), 1);
+                                      } else {
+                                        newVotes.push(menuName);
+                                      }
+                                      handleUpdateMyVote(newVotes);
+                                    }
+                                  }}
+                                >
+                                  <Text style={{ fontSize: 15, fontWeight: '600', color: isCurrentUserSelected ? '#FFFFFF' : THEME.text, flex: 1 }}>
+                                    {menuName}
+                                  </Text>
+                                  <View
+                                    style={{
+                                      backgroundColor: THEME.menuNeeded,
+                                      borderRadius: 12,
+                                      paddingHorizontal: 8,
+                                      paddingVertical: 4,
+                                    }}
+                                  >
+                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>
+                                      {voteCount}명
+                                    </Text>
+                                  </View>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        ) : (
+                          <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                            <Text style={{ fontSize: 14, color: THEME.textMuted, textAlign: 'center' }}>
+                              아직 선택된 메뉴가 없습니다.
+                            </Text>
+                            <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
+                              메뉴 추천을 받거나 메뉴를 직접 제안해 보세요.
+                            </Text>
+                          </View>
+                        );
+                      })()}
+
+                      {/* 참여자별 선택 */}
+                      <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: THEME.border }}>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
+                          참여자별 선택
+                        </Text>
+                        {participants.map(p => (
+                          <View
+                            key={p.id}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              marginBottom: 8,
+                              paddingVertical: 8,
+                              borderBottomWidth: 1,
+                              borderBottomColor: THEME.border,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                backgroundColor: p.avatar_color,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: 8,
+                              }}
+                            >
+                              <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
+                                {p.name[0]}
+                              </Text>
+                            </View>
+                            <Text style={{ flex: 1, color: THEME.text, fontWeight: '500' }}>
+                              {p.name}
+                            </Text>
+                            <Text style={{ color: p.voted_items?.length ? THEME.menuComplete : THEME.textMuted, fontWeight: '600', fontSize: 12 }}>
+                              {p.voted_items?.length ? p.voted_items.join(', ') : '선정 대기 중'}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                ) : (
+                  // Chatroom view
+                  <View
+                    style={{ flex: 1, position: 'relative' }}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                  >
+
+                    {/* Chatroom view */}
+                    <View style={{ flex: 1 }}>
                     <ScrollView
                       style={[styles.chatScroll, { flex: 1 }]}
                       contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
@@ -3592,27 +3803,29 @@ ${inviteLink}
                     </View>
                   )}
 
-                  {roomOverlay === 'dutch' && (
-                    <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
-                      <View style={styles.overlayHeader}>
-                        <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
-                        <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
-                          <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                        </TouchableOpacity>
+                    {roomOverlay === 'dutch' && (
+                      <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
+                        <View style={styles.overlayHeader}>
+                          <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
+                          <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
+                            <Text style={styles.overlayCloseText}>접기 ✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <DutchPay
+                            roomId={currentRoom.id}
+                            roomTitle={currentRoom.title}
+                            currentParticipant={currentParticipant}
+                            participants={participants}
+                            globalProfile={globalProfile}
+                          />
+                        </View>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <DutchPay
-                          roomId={currentRoom.id}
-                          roomTitle={currentRoom.title}
-                          currentParticipant={currentParticipant}
-                          participants={participants}
-                          globalProfile={globalProfile}
-                        />
-                      </View>
-                    </View>
-                  )}
+                    )}
 
+                  </View>
                 </View>
+                )}
               </View>
             ) : (
 
@@ -3692,7 +3905,7 @@ ${inviteLink}
                           }}
                           onMenuPress={() => {
                             setCurrentRoom(room);
-                            setRoomOverlay('dutch');
+                            setRoomSubTab('menu');
                             setActiveTab('addons');
                           }}
                           onSchedulePress={() => {
