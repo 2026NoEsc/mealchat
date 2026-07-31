@@ -3805,7 +3805,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
               >
                 <Text style={styles.confirmButtonText}>⏰ 약속 시간 변경하기</Text>
               </TouchableOpacity>
-              
+
               {onRetryCoordination && roomId && (
                 <TouchableOpacity
                   style={[styles.confirmButton, { backgroundColor: '#64748b' }]}

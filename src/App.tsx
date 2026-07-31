@@ -219,12 +219,12 @@ function AppContent() {
       // 1. Try a simple supabase check to check if server is reachable
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
-      
+
       // If we got here, network is working and Supabase is reachable!
       console.log('[Network] Connection test succeeded.');
       setIsOnline(true);
       setNetworkError(null);
-      
+
       // Try reloading profiles and session
       if (data?.session?.user) {
         setUser(data.session.user);
@@ -262,7 +262,7 @@ function AppContent() {
   const roomDutchPayPanResponder = usePanResponderSwipeBack({
     onSwipeBack: () => setRoomOverlay(null)
   });
-  
+
   // Room sub-navigation inside active room details
   const [roomSubTab, setRoomSubTab] = useState<'schedule' | 'menu' | 'baemin' | 'dutch'>('schedule');
 
@@ -323,10 +323,10 @@ function AppContent() {
 
   const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<AIRecommendation[]>([]);
-  
+
   // Active Rooms in Room List
   const [roomList, setRoomList] = useState<Room[]>([]);
-  
+
   // Notifications states
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([]);
   const [showNotificationsRedDot, setShowNotificationsRedDot] = useState(false);
@@ -879,7 +879,7 @@ function AppContent() {
         console.log('Failed to get push token for push notification!');
         return;
       }
-      
+
       let projectId: string | undefined = undefined;
       try {
         const Constants = require('expo-constants').default;
@@ -1216,7 +1216,7 @@ function AppContent() {
     const setupSync = async () => {
       const pts = await fetchParticipants(currentRoom.id);
       const cachedPartId = await storage.getItem(`bobyak_part_id_${currentRoom.id}`);
-      
+
       if (cachedPartId) {
         const me = pts.find(p => p.id === cachedPartId);
         if (me) {
@@ -1224,7 +1224,7 @@ function AppContent() {
           return;
         }
       }
-      
+
       if (globalProfile) {
         const existingMe = pts.find(p => p.profile_id === globalProfile.id);
         if (existingMe) {
@@ -1232,11 +1232,11 @@ function AppContent() {
           setCurrentParticipant(existingMe);
           return;
         }
-        
+
         await joinRoomWithProfile(currentRoom.id, globalProfile);
       }
     };
-    
+
     setupSync();
 
     console.log(`[Realtime] Subscribing to room sync channel for room ID: ${currentRoom.id}`);
@@ -1786,9 +1786,9 @@ function AppContent() {
         .from('rooms')
         .update({ color })
         .eq('id', currentRoom.id);
-      
+
       if (error) throw error;
-      
+
       setCurrentRoom(prev => prev ? { ...prev, color } : null);
       await fetchRooms();
     } catch (err) {
@@ -1872,7 +1872,7 @@ function AppContent() {
     try {
       setLoading(true);
       const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&sort=accuracy`;
-      
+
       const headers: Record<string, string> = {};
       if (KAKAO_REST_API_KEY) {
         headers['Authorization'] = `KakaoAK ${KAKAO_REST_API_KEY}`;
@@ -1880,7 +1880,7 @@ function AppContent() {
 
       const response = await fetch(url, { headers });
       const data = await response.json();
-      
+
       if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
         setLocationSearchResults(data.documents);
         setShowLocationResults(true);
@@ -1906,7 +1906,7 @@ function AppContent() {
       setEditingRoomLatitude(latVal);
       setEditingRoomLongitude(lngVal);
       setShowLocationResults(false);
-      
+
       setMapRegion({
         latitude: latVal,
         longitude: lngVal,
@@ -2251,7 +2251,7 @@ ${inviteLink}
       '계정 삭제',
       '정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
       [
-        { text: '취소', onPress: () => {} },
+        { text: '취소', onPress: () => { } },
         {
           text: '삭제',
           onPress: async () => {
@@ -2335,7 +2335,7 @@ ${inviteLink}
     try {
       setLoading(true);
       await supabase.auth.signOut();
-      
+
       // Clear local storage
       await storage.removeItem('bobyak_global_id');
       await storage.removeItem('bobyak_global_name');
@@ -3189,1245 +3189,1146 @@ ${inviteLink}
       >
 
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.logoRow} onPress={handleExitRoom}>
-          <MealChatLogo size={24} />
-          <Text style={styles.logoText}>밀챗</Text>
-        </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.logoRow} onPress={handleExitRoom}>
+            <MealChatLogo size={24} />
+            <Text style={styles.logoText}>밀챗</Text>
+          </TouchableOpacity>
 
-        <View style={styles.headerControls}>
-          {activeTab === 'addons' && !currentRoom && !isProfileIncomplete && (
-            <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
-              <Plus size={16} color="white" style={{ marginRight: 6 }} />
-              <Text style={styles.createBtnText}>새 약속 만들기</Text>
+          <View style={styles.headerControls}>
+            {activeTab === 'addons' && !currentRoom && !isProfileIncomplete && (
+              <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
+                <Plus size={16} color="white" style={{ marginRight: 6 }} />
+                <Text style={styles.createBtnText}>새 약속 만들기</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Alarm Bell */}
+            <TouchableOpacity
+              style={[styles.bellBtn, showNotifications && styles.bellBtnActive]}
+              onPress={() => {
+                if (isProfileIncomplete) {
+                  Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
+                  return;
+                }
+                setShowNotifications(!showNotifications);
+                setShowNotificationsRedDot(false);
+              }}
+            >
+              <Bell size={16} color={showNotifications ? '#ef4444' : '#94a3b8'} />
+              {showNotificationsRedDot && <View style={styles.redDot} />}
             </TouchableOpacity>
-          )}
 
-          {/* Alarm Bell */}
-          <TouchableOpacity
-            style={[styles.bellBtn, showNotifications && styles.bellBtnActive]}
-            onPress={() => {
-              if (isProfileIncomplete) {
-                Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
-                return;
-              }
-              setShowNotifications(!showNotifications);
-              setShowNotificationsRedDot(false);
-            }}
-          >
-            <Bell size={16} color={showNotifications ? '#ef4444' : '#94a3b8'} />
-            {showNotificationsRedDot && <View style={styles.redDot} />}
-          </TouchableOpacity>
-
-          {/* Settings Button */}
-          <TouchableOpacity
-            style={styles.settingsHeaderBtn}
-            onPress={() => {
-              setShowSettingsModal(true);
-            }}
-          >
-            <Settings size={16} color="#94a3b8" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Notifications Drawer Overlay */}
-      {showNotifications && (
-        <View style={styles.notificationsDrawer}>
-          <View style={styles.notifHeader}>
-            <Text style={styles.notifTitle}>정산 알림 목록 🔔</Text>
-            <TouchableOpacity onPress={() => setShowNotifications(false)}>
-              <Text style={styles.notifClose}>닫기</Text>
+            {/* Settings Button */}
+            <TouchableOpacity
+              style={styles.settingsHeaderBtn}
+              onPress={() => {
+                setShowSettingsModal(true);
+              }}
+            >
+              <Settings size={16} color="#94a3b8" />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.notifScroll}>
-            {appNotifications.length > 0 ? (
-              appNotifications.map(notif => (
-                <TouchableOpacity
-                  key={notif.id}
-                  style={styles.notifCard}
-                  onPress={() => handleNotifClick(notif)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notifItemTitle}>{notif.title}</Text>
-                    <Text style={styles.notifItemDesc}>{notif.message}</Text>
-                  </View>
-                  <View style={styles.payLinkBadge}>
-                    <ExternalLink size={12} color="black" />
-                    <Text style={styles.payLinkText}>송금</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noNotifsText}>도착한 정산 알림이 없습니다.</Text>
-            )}
-          </ScrollView>
         </View>
-      )}
 
-      {/* Main Content Area */}
-      <View style={styles.contentBody}>
-        
-        {/* TAB 1: 일정 조정 (Friend Heatmap Coordination) */}
-        {activeTab === 'schedule' && (
-          <View style={styles.tabBodyContainer}>
-            <ScheduleGrid
-              meetingDate={new Date().toISOString().split('T')[0]}
-              participants={[]}
-              currentParticipantId={globalProfile?.id || ''}
-              onSaveSchedule={handleSaveProfileSchedule}
-              isCoordination={true}
-              myProfile={globalProfile}
-              follows={myFollows}
-              onCoordinationConfirm={handleCoordinationConfirm}
-              activeRooms={roomList}
-              onUpdateRoom={fetchRooms}
-              onViewProfile={handleViewProfile}
-              onRefreshFollows={() => globalProfile?.id && fetchFollows(globalProfile.id)}
-            />
+        {/* Notifications Drawer Overlay */}
+        {showNotifications && (
+          <View style={styles.notificationsDrawer}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>정산 알림 목록 🔔</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <Text style={styles.notifClose}>닫기</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.notifScroll}>
+              {appNotifications.length > 0 ? (
+                appNotifications.map(notif => (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={styles.notifCard}
+                    onPress={() => handleNotifClick(notif)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notifItemTitle}>{notif.title}</Text>
+                      <Text style={styles.notifItemDesc}>{notif.message}</Text>
+                    </View>
+                    <View style={styles.payLinkBadge}>
+                      <ExternalLink size={12} color="black" />
+                      <Text style={styles.payLinkText}>송금</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noNotifsText}>도착한 정산 알림이 없습니다.</Text>
+              )}
+            </ScrollView>
           </View>
         )}
 
-        {/* TAB 2: 부가기능 (Rooms & Settlings) */}
-        {activeTab === 'addons' && (
-          <View style={styles.tabBodyContainer}>
-            {currentRoom ? (
-              <View style={{ flex: 1, backgroundColor: THEME.background }}>
-                {/* Room Info Bar & 24h Countdown */}
-                <View style={styles.roomInfoBar}>
-                  <TouchableOpacity style={styles.backChevronBtn} onPress={handleExitRoom}>
-                    <ChevronLeft size={24} color={THEME.text} />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={{ flex: 1, marginLeft: 8 }}
-                    onPress={() => setShowRoomInfoModal(true)}
-                  >
-                    <View style={styles.roomBarTitleRow}>
-                      <Text style={styles.roomBarTitle} numberOfLines={1}>{currentRoom.title} ▾</Text>
-                      <View style={styles.countdownContainer}>
-                        <Lock size={10} color="#f87171" style={{ marginRight: 3 }} />
-                        <Text style={styles.countdownText}>{timeLeft}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.roomBarMetaRow}>
-                      <Text style={[styles.roomBarMembers, { marginLeft: 0 }]}>
-                        멤버 {participants.length}명 | 정보 확인 & 코드 공유 ➜
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
+        {/* Main Content Area */}
+        <View style={styles.contentBody}>
 
-                {/* 방 나가기/삭제 버튼 */}
-                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-                  <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: '#FEE2E2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
-                    onPress={handleLeaveRoom}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#DC2626' }}>🚪 방 나가기</Text>
-                  </TouchableOpacity>
-                </View>
+          {/* TAB 1: 일정 조정 (Friend Heatmap Coordination) */}
+          {activeTab === 'schedule' && (
+            <View style={styles.tabBodyContainer}>
+              <ScheduleGrid
+                meetingDate={new Date().toISOString().split('T')[0]}
+                participants={[]}
+                currentParticipantId={globalProfile?.id || ''}
+                onSaveSchedule={handleSaveProfileSchedule}
+                isCoordination={true}
+                myProfile={globalProfile}
+                follows={myFollows}
+                onCoordinationConfirm={handleCoordinationConfirm}
+                activeRooms={roomList}
+                onUpdateRoom={fetchRooms}
+                onViewProfile={handleViewProfile}
+                onRefreshFollows={() => globalProfile?.id && fetchFollows(globalProfile.id)}
+              />
+            </View>
+          )}
 
-                {/* KakaoNotice Bar */}
-                <View style={styles.kakaoNoticeArea}>
-                  <View style={styles.kakaoNoticeHeader}>
-                    <Volume2 size={14} color={THEME.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.kakaoNoticeHeaderText} numberOfLines={1}>
-                      📢 [공지] {currentRoom.is_confirmed 
-                        ? `약속 확정! 🗓️ ${currentRoom.confirmed_slot}` 
-                        : '밀챗 약속 일정을 조율해 주세요!'}
-                    </Text>
-                  </View>
+          {/* TAB 2: 부가기능 (Rooms & Settlings) */}
+          {activeTab === 'addons' && (
+            <View style={styles.tabBodyContainer}>
+              {currentRoom ? (
+                <View style={{ flex: 1, backgroundColor: THEME.background }}>
+                  {/* Room Info Bar & 24h Countdown */}
+                  <View style={styles.roomInfoBar}>
+                    <TouchableOpacity style={styles.backChevronBtn} onPress={handleExitRoom}>
+                      <ChevronLeft size={24} color={THEME.text} />
+                    </TouchableOpacity>
 
-                  <View style={styles.kakaoNoticeTabs}>
-                    {isCurrentRoomOneDay && (
-                      <TouchableOpacity 
-                        style={[styles.noticeTabBtn, roomOverlay === 'schedule' && styles.noticeTabBtnActive]}
-                        onPress={() => setRoomOverlay(roomOverlay === 'schedule' ? null : 'schedule')}
-                      >
-                        <Text style={[styles.noticeTabBtnText, roomOverlay === 'schedule' && styles.noticeTabBtnTextActive]}>
-                          🗓️ 일정 조율
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity 
-                      style={[
-                        styles.noticeTabBtn, 
-                        roomOverlay === 'dutch' && styles.noticeTabBtnActive,
-                        !isCurrentRoomOneDay && { flex: 1 }
-                      ]}
-                      onPress={() => setRoomOverlay(roomOverlay === 'dutch' ? null : 'dutch')}
+                    <TouchableOpacity
+                      style={{ flex: 1, marginLeft: 8 }}
+                      onPress={() => setShowRoomInfoModal(true)}
                     >
-                      <Text style={[styles.noticeTabBtnText, roomOverlay === 'dutch' && styles.noticeTabBtnTextActive]}>
-                        💸 N빵 정산
-                      </Text>
+                      <View style={styles.roomBarTitleRow}>
+                        <Text style={styles.roomBarTitle} numberOfLines={1}>{currentRoom.title} ▾</Text>
+                        <View style={styles.countdownContainer}>
+                          <Lock size={10} color="#f87171" style={{ marginRight: 3 }} />
+                          <Text style={styles.countdownText}>{timeLeft}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.roomBarMetaRow}>
+                        <Text style={[styles.roomBarMembers, { marginLeft: 0 }]}>
+                          멤버 {participants.length}명 | 정보 확인 & 코드 공유 ➜
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
-                </View>
 
-                {/* 참여자 정보 헤더 */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ height: 60, paddingVertical: 8 }}
-                  contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
-                >
-                  {participants.map(p => (
-                    <View
-                      key={p.id}
-                      style={{ alignItems: 'center' }}
+                  {/* 방 나가기/삭제 버튼 */}
+                  <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
+                    <TouchableOpacity
+                      style={{ flex: 1, backgroundColor: '#FEE2E2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
+                      onPress={handleLeaveRoom}
                     >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: p.avatar_color,
-                          justifyContent: 'center',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
-                          {p.name[0]}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 10, marginTop: 4, color: THEME.textMuted }}>
-                        {p.name}
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#DC2626' }}>🚪 방 나가기</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* KakaoNotice Bar */}
+                  <View style={styles.kakaoNoticeArea}>
+                    <View style={styles.kakaoNoticeHeader}>
+                      <Volume2 size={14} color={THEME.primary} style={{ marginRight: 6 }} />
+                      <Text style={styles.kakaoNoticeHeaderText} numberOfLines={1}>
+                        📢 [공지] {currentRoom.is_confirmed
+                          ? `약속 확정! 🗓️ ${currentRoom.confirmed_slot}`
+                          : '밀챗 약속 일정을 조율해 주세요!'}
                       </Text>
                     </View>
-                  ))}
-                </ScrollView>
 
-                {/* Main Body - Menu Tab or Live chatroom or drop down active panel */}
-                {roomSubTab === 'menu' ? (
-                  // Menu Tab UI
-                  <View style={{ flex: 1, backgroundColor: THEME.background }}>
-                    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-                      {/* 현황 표시 */}
-                      {(() => {
-                        const { selectedCount, totalCount } = getMenuProgress();
-                        const progressPercentage = totalCount > 0 ? (selectedCount / totalCount) * 100 : 0;
-
-                        return (
-                          <View style={{ paddingVertical: 12, marginBottom: 16 }}>
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
-                              메뉴 선정
-                            </Text>
-                            <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
-                              {selectedCount}명 중 {totalCount}명 선정 완료
-                            </Text>
-                            {/* 진행도 바 */}
-                            <View
-                              style={{
-                                height: 6,
-                                backgroundColor: THEME.border,
-                                borderRadius: 3,
-                                marginTop: 8,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  height: '100%',
-                                  width: `${progressPercentage}%`,
-                                  backgroundColor: THEME.menuComplete,
-                                }}
-                              />
-                            </View>
-                          </View>
-                        );
-                      })()}
-
-                      {/* AI 추천 메뉴 섹션 */}
-                      {aiRecommendations.length > 0 && (
-                        <View
-                          style={{
-                            backgroundColor: THEME.menuNeeded + '10',
-                            borderLeftWidth: 4,
-                            borderLeftColor: THEME.menuNeeded,
-                            padding: 12,
-                            borderRadius: 8,
-                            marginBottom: 16,
-                          }}
+                    <View style={styles.kakaoNoticeTabs}>
+                      {isCurrentRoomOneDay && (
+                        <TouchableOpacity
+                          style={[styles.noticeTabBtn, roomOverlay === 'schedule' && styles.noticeTabBtnActive]}
+                          onPress={() => setRoomOverlay(roomOverlay === 'schedule' ? null : 'schedule')}
                         >
-                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text }}>
-                            🤖 AI 추천 메뉴
+                          <Text style={[styles.noticeTabBtnText, roomOverlay === 'schedule' && styles.noticeTabBtnTextActive]}>
+                            🗓️ 일정 조율
                           </Text>
-                          <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
-                            AI가 분석한 최고의 메뉴 선택지입니다.
-                          </Text>
-                          <TouchableOpacity
-                            style={{
-                              marginTop: 10,
-                              paddingVertical: 8,
-                              backgroundColor: THEME.menuNeeded,
-                              borderRadius: 6,
-                              alignItems: 'center',
-                            }}
-                            onPress={handleRunAIRecommendations}
-                          >
-                            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
-                              추천 메뉴 보기
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
                       )}
-
-                      {/* 선택된 메뉴 카드 */}
-                      {(() => {
-                        const menus = getAllSelectedMenus();
-                        return menus.length > 0 ? (
-                          <View style={{ marginBottom: 16 }}>
-                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
-                              선택된 메뉴
-                            </Text>
-                            {menus.map(menuName => {
-                              const voteCount = getMenuVoteCount(menuName);
-                              const isCurrentUserSelected = currentParticipant?.voted_items?.includes(menuName);
-
-                              return (
-                                <TouchableOpacity
-                                  key={menuName}
-                                  style={{
-                                    backgroundColor: isCurrentUserSelected ? THEME.menuComplete : THEME.surface,
-                                    borderWidth: 2,
-                                    borderColor: isCurrentUserSelected ? THEME.menuComplete : THEME.border,
-                                    borderRadius: 12,
-                                    padding: 12,
-                                    marginBottom: 8,
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                  }}
-                                  onPress={() => {
-                                    if (currentParticipant) {
-                                      const newVotes = currentParticipant.voted_items || [];
-                                      if (newVotes.includes(menuName)) {
-                                        newVotes.splice(newVotes.indexOf(menuName), 1);
-                                      } else {
-                                        newVotes.push(menuName);
-                                      }
-                                      handleUpdateMyVote(newVotes);
-                                    }
-                                  }}
-                                >
-                                  <Text style={{ fontSize: 15, fontWeight: '600', color: isCurrentUserSelected ? '#FFFFFF' : THEME.text, flex: 1 }}>
-                                    {menuName}
-                                  </Text>
-                                  <View
-                                    style={{
-                                      backgroundColor: THEME.menuNeeded,
-                                      borderRadius: 12,
-                                      paddingHorizontal: 8,
-                                      paddingVertical: 4,
-                                    }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>
-                                      {voteCount}명
-                                    </Text>
-                                  </View>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        ) : (
-                          <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-                            <Text style={{ fontSize: 14, color: THEME.textMuted, textAlign: 'center' }}>
-                              아직 선택된 메뉴가 없습니다.
-                            </Text>
-                            <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
-                              메뉴 추천을 받거나 메뉴를 직접 제안해 보세요.
-                            </Text>
-                          </View>
-                        );
-                      })()}
-
-                      {/* 참여자별 선택 */}
-                      <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: THEME.border }}>
-                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
-                          참여자별 선택
-                        </Text>
-                        {participants.map(p => (
-                          <View
-                            key={p.id}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              marginBottom: 8,
-                              paddingVertical: 8,
-                              borderBottomWidth: 1,
-                              borderBottomColor: THEME.border,
-                            }}
-                          >
-                            <View
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 16,
-                                backgroundColor: p.avatar_color,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginRight: 8,
-                              }}
-                            >
-                              <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
-                                {p.name[0]}
-                              </Text>
-                            </View>
-                            <Text style={{ flex: 1, color: THEME.text, fontWeight: '500' }}>
-                              {p.name}
-                            </Text>
-                            <Text style={{ color: p.voted_items?.length ? THEME.menuComplete : THEME.textMuted, fontWeight: '600', fontSize: 12 }}>
-                              {p.voted_items?.length ? p.voted_items.join(', ') : '선정 대기 중'}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    </ScrollView>
-                  </View>
-                ) : (
-                  // Chatroom view
-                  <View
-                    style={{ flex: 1, position: 'relative' }}
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                  >
-
-                    {/* Chatroom view */}
-                    <View style={{ flex: 1 }}>
-                    <ScrollView
-                      style={[styles.chatScroll, { flex: 1 }]}
-                      contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
-                      keyboardShouldPersistTaps="handled"
-                      ref={(ref) => {
-                        setTimeout(() => ref?.scrollToEnd({ animated: true }), 100);
-                      }}
-                    >
-                        {roomMessages.length > 0 ? (
-                          roomMessages.map((msg, index) => {
-                            const isMe = msg.sender_id === globalProfile?.id;
-                            const prevMsg = index > 0 ? roomMessages[index - 1] : null;
-                            const isSameSender = prevMsg && prevMsg.sender_id === msg.sender_id;
-                            const showAvatar = !isMe && !isSameSender;
-
-                            // Message time formatting
-                            const messageTime = msg.created_at
-                              ? new Date(msg.created_at).toLocaleTimeString('ko-KR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                })
-                              : '';
-
-                            return (
-                              <View key={msg.id} style={[styles.chatRow, isMe ? styles.chatRowMe : styles.chatRowOther]}>
-                                {showAvatar ? (
-                                  <TouchableOpacity
-                                    style={[styles.chatAvatar, { backgroundColor: msg.sender_color }]}
-                                    onPress={() => handleViewProfile(msg.sender_id)}
-                                  >
-                                    <Text style={styles.chatAvatarText}>{msg.sender_name[0]}</Text>
-                                  </TouchableOpacity>
-                                ) : !isMe ? (
-                                  <View style={{ width: 40 }} />
-                                ) : null}
-                                <View style={{ maxWidth: '75%' }}>
-                                  {showAvatar && !isMe && (
-                                    <TouchableOpacity onPress={() => handleViewProfile(msg.sender_id)}>
-                                      <Text style={styles.chatSenderName}>{msg.sender_name}</Text>
-                                    </TouchableOpacity>
-                                  )}
-                                  {(() => {
-                                    const isEmoticon = msg.message.startsWith('[emoticon:') && msg.message.endsWith(']');
-                                    if (isEmoticon) {
-                                      const key = msg.message.slice(10, -1);
-                                      const imageSource = EMOTICONS_MAP[key];
-                                      if (imageSource) {
-                                        return (
-                                          <View>
-                                            <View style={styles.chatEmoticonBubble}>
-                                              <Image source={imageSource} style={styles.chatEmoticonImage} />
-                                            </View>
-                                            {messageTime && (
-                                              <Text style={styles.chatMessageTime}>{messageTime}</Text>
-                                            )}
-                                          </View>
-                                        );
-                                      }
-                                    }
-                                    return (
-                                      <View>
-                                        <View
-                                          style={[
-                                            styles.chatBubble,
-                                            isMe
-                                              ? styles.chatBubbleMe
-                                              : {
-                                                  ...styles.chatBubbleOther,
-                                                  backgroundColor: msg.sender_color ? msg.sender_color + '20' : THEME.surface
-                                                }
-                                          ]}
-                                        >
-                                          <Text style={[styles.chatText, isMe ? styles.chatTextMe : styles.chatTextOther]}>
-                                            {msg.message}
-                                          </Text>
-                                        </View>
-                                        {messageTime && (
-                                          <Text style={styles.chatMessageTime}>{messageTime}</Text>
-                                        )}
-                                      </View>
-                                    );
-                                  })()}
-                                </View>
-                              </View>
-                            );
-                          })
-                        ) : (
-                          <Text style={styles.emptyChatText}>
-                            대화방이 개설되었습니다. 메이트들과 인사를 나눠보세요! 👋
-                          </Text>
-                        )}
-                      </ScrollView>
-
-                    {/* Chat Input */}
-                    <View style={styles.chatInputBar}>
                       <TouchableOpacity
-                        style={styles.emoticonToggleBtn}
-                        onPress={() => setShowEmoticonPicker(!showEmoticonPicker)}
+                        style={[
+                          styles.noticeTabBtn,
+                          roomOverlay === 'dutch' && styles.noticeTabBtnActive,
+                          !isCurrentRoomOneDay && { flex: 1 }
+                        ]}
+                        onPress={() => setRoomOverlay(roomOverlay === 'dutch' ? null : 'dutch')}
                       >
-                        <Smile size={22} color={showEmoticonPicker ? THEME.primary : THEME.textMuted} />
-                      </TouchableOpacity>
-                      <TextInput
-                        style={styles.chatTextInput}
-                        placeholder="메시지를 입력해 주세요..."
-                        placeholderTextColor={THEME.textMuted}
-                        value={newMessageText}
-                        onChangeText={(t) => {
-                          setNewMessageText(t);
-                          if (showEmoticonPicker) setShowEmoticonPicker(false);
-                        }}
-                        multiline
-                      />
-                      <TouchableOpacity style={styles.chatSendBtn} onPress={handleSendMessage}>
-                        <Send size={16} color="white" />
+                        <Text style={[styles.noticeTabBtnText, roomOverlay === 'dutch' && styles.noticeTabBtnTextActive]}>
+                          💸 N빵 정산
+                        </Text>
                       </TouchableOpacity>
                     </View>
-
-                    {/* Emoticon Picker */}
-                    {showEmoticonPicker && (
-                      <View style={styles.emoticonPickerContainer}>
-                        <Text style={styles.emoticonPickerTitle}>밀챗 캐릭터 이모티콘</Text>
-                        <ScrollView showsVerticalScrollIndicator={true} style={styles.emoticonPickerScrollContainer} contentContainerStyle={styles.emoticonPickerGrid}>
-                          {Object.keys(EMOTICONS_MAP).map((key) => {
-                            const nameMap: { [k: string]: string } = {
-                              dudu_meet: '약속두두',
-                              dudu_sad: '슬픈두두',
-                              dudu_love: '하트두두',
-                              dudu_wink: '윙크두두',
-                              dudu_shock: '깜놀두두',
-                              moa_ok: '확인모아',
-                              moa_hello: '안녕모아',
-                              moa_busy: '바쁜모아',
-                              moa_sleep: '낮잠모아',
-                              moa_party: '파티모아',
-                              welling_eat: '냠냠웰링',
-                              welling_coffee: '커피웰링',
-                              welling_starving: '배고픈웰링',
-                              welling_full: '배부른웰링',
-                              welling_thumbs: '최고웰링',
-                              ttori_dutch: '정산또리',
-                              ttori_angry: '화난또리',
-                            };
-                            return (
-                              <TouchableOpacity
-                                key={key}
-                                style={styles.emoticonPickerItem}
-                                onPress={() => handleSendEmoticon(key)}
-                              >
-                                <Image source={EMOTICONS_MAP[key]} style={styles.emoticonPickerImage} />
-                                <Text style={styles.emoticonPickerName}>{nameMap[key]}</Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </ScrollView>
-                      </View>
-                    )}
                   </View>
 
-                  {/* Dropdowns */}
-                  {roomOverlay === 'schedule' && (
-                    <View style={styles.noticeDropdownOverlay}>
-                      <View style={styles.overlayHeader}>
-                        <Text style={styles.overlayHeaderTitle}>🗓️ 일정 조율</Text>
-                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                          <TouchableOpacity
-                            style={{
-                              backgroundColor: THEME.primary,
-                              paddingHorizontal: 10,
-                              paddingVertical: 6,
-                              borderRadius: 6,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                            onPress={handleRunAIRecommendations}
-                          >
-                            <Sparkles size={12} color="white" />
-                            <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>AI 맞춤 추천</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
-                            <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      {/* Progress Display */}
-                      {(() => {
-                        const scheduleSelectedCount = participants.filter(p =>
-                          p.schedule && Object.keys(p.schedule).length > 0
-                        ).length;
-                        const totalParticipants = participants.length;
-                        const progressPercent = totalParticipants > 0 ? (scheduleSelectedCount / totalParticipants) * 100 : 0;
-
-                        return (
-                          <View style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 16 }}>
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
-                              일정 조율
-                            </Text>
-                            <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
-                              {scheduleSelectedCount}명 중 {totalParticipants}명 선택 완료
-                            </Text>
-                            {/* Progress Bar */}
-                            <View
-                              style={{
-                                height: 6,
-                                backgroundColor: THEME.border,
-                                borderRadius: 3,
-                                marginTop: 8,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  height: '100%',
-                                  width: `${progressPercent}%`,
-                                  backgroundColor: THEME.scheduleInProgress,
-                                }}
-                              />
-                            </View>
-                          </View>
-                        );
-                      })()}
-
-                      <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                        {/* ScheduleGrid Container */}
+                  {/* 참여자 정보 헤더 */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ height: 60, paddingVertical: 8 }}
+                    contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
+                  >
+                    {participants.map(p => (
+                      <View
+                        key={p.id}
+                        style={{ alignItems: 'center' }}
+                      >
                         <View
                           style={{
-                            borderWidth: 1,
-                            borderColor: THEME.border,
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            marginBottom: 16,
-                            flex: 1,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: p.avatar_color,
+                            justifyContent: 'center',
+                            alignItems: 'center'
                           }}
                         >
-                          <ScheduleGrid
-                            meetingDate={currentRoom.meeting_date}
-                            participants={participants}
-                            currentParticipantId={currentParticipant?.id || ''}
-                            onSaveSchedule={handleSaveParticipantSchedule}
-                            isConfirmed={currentRoom.is_confirmed}
-                            confirmedSlot={currentRoom.confirmed_slot}
-                            onConfirmSchedule={(slot) => {
-                              handleConfirmSchedule(slot);
-                              setRoomOverlay(null);
-                            }}
-                            activeRooms={roomList}
-                            onUpdateRoom={fetchRooms}
-                            roomExpiresAt={currentRoom.expires_at}
-                            onRetryCoordination={handleRetryCoordination}
-                            roomId={currentRoom.id}
-                            roomOwner={roomOwnerProfileId || ''}
-                            currentProfileId={globalProfile?.id || ''}
-                          />
+                          <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                            {p.name[0]}
+                          </Text>
                         </View>
+                        <Text style={{ fontSize: 10, marginTop: 4, color: THEME.textMuted }}>
+                          {p.name}
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
 
-                        {/* Confirmed Time Display */}
-                        {currentRoom.is_confirmed && (
+                  {/* Main Body - Menu Tab or Live chatroom or drop down active panel */}
+                  {roomSubTab === 'menu' ? (
+                    // Menu Tab UI
+                    <View style={{ flex: 1, backgroundColor: THEME.background }}>
+                      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+                        {/* 현황 표시 */}
+                        {(() => {
+                          const { selectedCount, totalCount } = getMenuProgress();
+                          const progressPercentage = totalCount > 0 ? (selectedCount / totalCount) * 100 : 0;
+
+                          return (
+                            <View style={{ paddingVertical: 12, marginBottom: 16 }}>
+                              <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                                메뉴 선정
+                              </Text>
+                              <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
+                                {selectedCount}명 중 {totalCount}명 선정 완료
+                              </Text>
+                              {/* 진행도 바 */}
+                              <View
+                                style={{
+                                  height: 6,
+                                  backgroundColor: THEME.border,
+                                  borderRadius: 3,
+                                  marginTop: 8,
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    height: '100%',
+                                    width: `${progressPercentage}%`,
+                                    backgroundColor: THEME.menuComplete,
+                                  }}
+                                />
+                              </View>
+                            </View>
+                          );
+                        })()}
+
+                        {/* AI 추천 메뉴 섹션 */}
+                        {aiRecommendations.length > 0 && (
                           <View
                             style={{
-                              backgroundColor: THEME.confirmed + '10',
+                              backgroundColor: THEME.menuNeeded + '10',
                               borderLeftWidth: 4,
-                              borderLeftColor: THEME.confirmed,
+                              borderLeftColor: THEME.menuNeeded,
                               padding: 12,
                               borderRadius: 8,
                               marginBottom: 16,
                             }}
                           >
-                            <Text style={{ fontWeight: 'bold', color: THEME.text, fontSize: 14 }}>
-                              ✓ 확정 시간: {currentRoom.confirmed_slot}
+                            <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text }}>
+                              🤖 AI 추천 메뉴
                             </Text>
-                          </View>
-                        )}
-
-                        {/* Estimated Cost Display */}
-                        {currentRoom.is_confirmed && (
-                          <View
-                            style={{
-                              backgroundColor: THEME.surface,
-                              borderWidth: 1,
-                              borderColor: THEME.border,
-                              borderRadius: 8,
-                              padding: 12,
-                              marginBottom: 16,
-                            }}
-                          >
-                            <Text style={{ fontSize: 14, color: THEME.textMuted }}>
-                              예상 비용
-                            </Text>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: THEME.text, marginTop: 4 }}>
-                              1인당 ¥12,500
+                            <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
+                              AI가 분석한 최고의 메뉴 선택지입니다.
                             </Text>
                             <TouchableOpacity
                               style={{
-                                marginTop: 12,
+                                marginTop: 10,
                                 paddingVertical: 8,
                                 backgroundColor: THEME.menuNeeded,
-                                borderRadius: 8,
+                                borderRadius: 6,
                                 alignItems: 'center',
                               }}
-                              onPress={() => {
-                                setRoomOverlay('dutch');
-                              }}
+                              onPress={handleRunAIRecommendations}
                             >
-                              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
-                                정산 상세 보기
+                              <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
+                                추천 메뉴 보기
                               </Text>
                             </TouchableOpacity>
                           </View>
                         )}
-                      </View>
-                    </View>
-                  )}
 
-                    {roomOverlay === 'dutch' && (
-                      <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
-                        <View style={styles.overlayHeader}>
-                          <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
-                          <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
-                            <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <DutchPay
-                            roomId={currentRoom.id}
-                            roomTitle={currentRoom.title}
-                            currentParticipant={currentParticipant}
-                            participants={participants}
-                            globalProfile={globalProfile}
-                          />
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            ) : (
+                        {/* 선택된 메뉴 카드 */}
+                        {(() => {
+                          const menus = getAllSelectedMenus();
+                          return menus.length > 0 ? (
+                            <View style={{ marginBottom: 16 }}>
+                              <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
+                                선택된 메뉴
+                              </Text>
+                              {menus.map(menuName => {
+                                const voteCount = getMenuVoteCount(menuName);
+                                const isCurrentUserSelected = currentParticipant?.voted_items?.includes(menuName);
 
-              // Active Rooms List
-              <ScrollView 
-                style={styles.tabBody} 
-                contentContainerStyle={{ paddingBottom: 30 }}
-                refreshControl={
-                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.primary]} />
-                }
-              >
-                <Text style={styles.sectionHeading}>현재 개설된 밀챗 방</Text>
+                                return (
+                                  <TouchableOpacity
+                                    key={menuName}
+                                    style={{
+                                      backgroundColor: isCurrentUserSelected ? THEME.menuComplete : THEME.surface,
+                                      borderWidth: 2,
+                                      borderColor: isCurrentUserSelected ? THEME.menuComplete : THEME.border,
+                                      borderRadius: 12,
+                                      padding: 12,
+                                      marginBottom: 8,
+                                      flexDirection: 'row',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                    }}
+                                    onPress={() => {
+                                      if (currentParticipant) {
+                                        const newVotes = currentParticipant.voted_items || [];
+                                        if (newVotes.includes(menuName)) {
+                                          newVotes.splice(newVotes.indexOf(menuName), 1);
+                                        } else {
+                                          newVotes.push(menuName);
+                                        }
+                                        handleUpdateMyVote(newVotes);
+                                      }
+                                    }}
+                                  >
+                                    <Text style={{ fontSize: 15, fontWeight: '600', color: isCurrentUserSelected ? '#FFFFFF' : THEME.text, flex: 1 }}>
+                                      {menuName}
+                                    </Text>
+                                    <View
+                                      style={{
+                                        backgroundColor: THEME.menuNeeded,
+                                        borderRadius: 12,
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 4,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>
+                                        {voteCount}명
+                                      </Text>
+                                    </View>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                          ) : (
+                            <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                              <Text style={{ fontSize: 14, color: THEME.textMuted, textAlign: 'center' }}>
+                                아직 선택된 메뉴가 없습니다.
+                              </Text>
+                              <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
+                                메뉴 추천을 받거나 메뉴를 직접 제안해 보세요.
+                              </Text>
+                            </View>
+                          );
+                        })()}
 
-                {/* Join Room Code Input */}
-                <View style={styles.joinCard}>
-                  <View style={styles.joinRow}>
-                    <TextInput
-                      style={styles.joinInput}
-                      placeholder="초대 코드 6자리 입력"
-                      placeholderTextColor="#64748b"
-                      value={joinRoomCode}
-                      onChangeText={setJoinRoomCode}
-                      autoCapitalize="characters"
-                      maxLength={6}
-                    />
-                    <TouchableOpacity style={styles.joinBtn} onPress={handleJoinRoomByCode}>
-                      <Text style={styles.joinBtnText}>입장</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* My Dutch Pay Ledger Button */}
-                <TouchableOpacity
-                  style={styles.globalDutchPayBtnCard}
-                  onPress={() => {
-                    if (isProfileIncomplete) {
-                      Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
-                      return;
-                    }
-                    setShowGlobalDutchPay(true);
-                  }}
-                >
-                  <View style={styles.globalDutchPayBtnCardContent}>
-                    <Text style={styles.globalDutchPayBtnCardTitle}>💸 나의 N빵 정산 대장</Text>
-                    <Text style={styles.globalDutchPayBtnCardSubtitle}>
-                      방이 폭파된 후에도 남아있는 미완료 정산 내역을 확인하고 송금할 수 있습니다.
-                    </Text>
-                  </View>
-                  <Text style={styles.globalDutchPayBtnCardArrow}>보기 ➜</Text>
-                </TouchableOpacity>
-
-                {/* Room Card List */}
-                {roomsLoading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={THEME.primary} />
-                    <Text style={styles.loadingText}>방 목록을 불러오는 중...</Text>
-                  </View>
-                ) : roomList.length > 0 ? (
-                  <View style={{ gap: 12 }}>
-                    {roomList.map(room => {
-                      // Calculate unread count for this room
-                      const roomUnreadCount = appNotifications.filter(notif => notif.room_id === room.id).length;
-
-                      return (
-                        <RoomCard
-                          key={room.id}
-                          room={room}
-                          unreadCount={roomUnreadCount}
-                          onPress={() => {
-                            setCurrentRoom(room);
-                            setRoomSubTab('schedule');
-                          }}
-                          onChatPress={() => {
-                            setCurrentRoom(room);
-                            setRoomSubTab('schedule');
-                            setActiveTab('addons');
-                          }}
-                          onMenuPress={() => {
-                            setCurrentRoom(room);
-                            setRoomSubTab('menu');
-                            setActiveTab('addons');
-                          }}
-                          onSchedulePress={() => {
-                            setCurrentRoom(room);
-                            setRoomOverlay('schedule');
-                            setActiveTab('addons');
-                          }}
-                        />
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <View style={styles.emptyBox}>
-                    <Text style={styles.emptyText}>참여 중인 밀챗 방이 없습니다.</Text>
-                    <Text style={styles.emptySubText}>[일정 조정] 탭에서 방을 개설하거나 초대코드로 참여해 보세요.</Text>
-                  </View>
-                )}
-              </ScrollView>
-            )}
-          </View>
-        )}
-
-      </View>
-
-
-      {/* Bottom Tab Navigation */}
-      {!currentRoom && (
-        <View style={styles.tabNavigation}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'schedule' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('schedule')}
-          >
-            <CalendarIcon size={20} color={activeTab === 'schedule' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'schedule' && styles.tabButtonTextActive]}>
-              일정 조율
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'addons' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('addons')}
-          >
-            <Sparkles size={20} color={activeTab === 'addons' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'addons' && styles.tabButtonTextActive]}>
-              채팅방
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Profile View Modal */}
-      <Modal
-        visible={showProfileModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowProfileModal(false)}
-      >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-          <View style={[styles.modalContent, { width: '90%', maxWidth: 350, position: 'relative' }]}>
-            {selectedProfile && (
-              <View>
-                {/* 우측 상단 X 닫기 버튼 */}
-                <TouchableOpacity
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    zIndex: 10,
-                    padding: 8
-                  }}
-                  onPress={() => setShowProfileModal(false)}
-                >
-                  <X size={20} color={THEME.textMuted} />
-                </TouchableOpacity>
-
-                <View style={{ alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-                  <View style={[styles.modalProfileAvatar, { backgroundColor: selectedProfile.avatar_color }]}>
-                    <Text style={styles.modalProfileAvatarText}>{selectedProfile.name[0]}</Text>
-                  </View>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text, marginTop: 8 }}>
-                    {selectedProfile.name}
-                  </Text>
-                  {selectedProfile.personal_data?.bio && (
-                    <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
-                      {selectedProfile.personal_data.bio}
-                    </Text>
-                  )}
-
-                  {globalProfile && selectedProfile.id !== globalProfile.id && (
-                    (() => {
-                      const isFriend = myFollows.some(f => f.following_id === selectedProfile.id);
-                      if (isFriend) {
-                        return (
-                          <View
-                            style={{
-                              marginTop: 12,
-                              backgroundColor: '#f1f5f9',
-                              paddingHorizontal: 16,
-                              paddingVertical: 8,
-                              borderRadius: 20,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderWidth: 1,
-                              borderColor: THEME.border
-                            }}
-                          >
-                            <Check size={14} color="#64748b" style={{ marginRight: 4 }} />
-                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748b' }}>친구 목록에 있음</Text>
-                          </View>
-                        );
-                      } else {
-                        return (
-                          <TouchableOpacity
-                            style={{
-                              marginTop: 12,
-                              backgroundColor: THEME.primary,
-                              paddingHorizontal: 16,
-                              paddingVertical: 8,
-                              borderRadius: 20,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            onPress={() => handleAddFriend(selectedProfile.id)}
-                          >
-                            <Plus size={14} color="white" style={{ marginRight: 4 }} />
-                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'white' }}>친구 추가하기</Text>
-                          </TouchableOpacity>
-                        );
-                      }
-                    })()
-                  )}
-                </View>
-
-                <ScrollView style={{ maxHeight: 300 }}>
-                  {isFieldVisible('allergies', selectedProfile) && selectedProfile.personal_data?.allergies?.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>알레르기</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.allergies.join(', ')}</Text>
-                    </View>
-                  )}
-                  {isFieldVisible('likes', selectedProfile) && selectedProfile.personal_data?.likes?.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>좋아하는 음식</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.likes.join(', ')}</Text>
-                    </View>
-                  )}
-                  {isFieldVisible('dislikes', selectedProfile) && selectedProfile.personal_data?.dislikes?.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>싫어하는 음식</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.dislikes.join(', ')}</Text>
-                    </View>
-                  )}
-                  {isFieldVisible('health_issues', selectedProfile) && selectedProfile.personal_data?.health_issues?.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>건강 주의사항</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.health_issues.join(', ')}</Text>
-                    </View>
-                  )}
-                  {isFieldVisible('birthdate', selectedProfile) && selectedProfile.personal_data?.birthdate && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>생년월일</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.birthdate}</Text>
-                    </View>
-                  )}
-                  {isFieldVisible('gender', selectedProfile) && selectedProfile.personal_data?.gender && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>성별</Text>
-                      <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.gender}</Text>
-                    </View>
-                  )}
-                  {/* 5-Day Busy Schedule Mini Grid */}
-                  {selectedProfile.schedule && (
-                    <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: THEME.border }}>
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.text, marginBottom: 4 }}>
-                        📅 5일간 바쁜 시간대 요약
-                      </Text>
-                      <Text style={{ fontSize: 10, color: THEME.textMuted, marginBottom: 8 }}>
-                        보라색 슬롯은 친구가 바쁜 시간대(약속 불가)입니다.
-                      </Text>
-                      
-                      {/* Mini Grid */}
-                      <View style={{ flexDirection: 'row', backgroundColor: THEME.surfaceDarker, borderRadius: 8, padding: 8 }}>
-                        {/* Time Axis */}
-                        <View style={{ marginRight: 6, gap: 2 }}>
-                          <View style={{ height: 20, justifyContent: 'center' }}><Text style={{ fontSize: 8, color: 'transparent' }}>시간</Text></View>
-                          {['11:30', '12:00', '12:30', '13:00', '13:30', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'].map(t => (
-                            <View key={t} style={{ height: 12, justifyContent: 'center' }}>
-                              <Text style={{ fontSize: 8, color: THEME.textMuted, fontWeight: '600' }}>{t}</Text>
+                        {/* 참여자별 선택 */}
+                        <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: THEME.border }}>
+                          <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
+                            참여자별 선택
+                          </Text>
+                          {participants.map(p => (
+                            <View
+                              key={p.id}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                                paddingVertical: 8,
+                                borderBottomWidth: 1,
+                                borderBottomColor: THEME.border,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 16,
+                                  backgroundColor: p.avatar_color,
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  marginRight: 8,
+                                }}
+                              >
+                                <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
+                                  {p.name[0]}
+                                </Text>
+                              </View>
+                              <Text style={{ flex: 1, color: THEME.text, fontWeight: '500' }}>
+                                {p.name}
+                              </Text>
+                              <Text style={{ color: p.voted_items?.length ? THEME.menuComplete : THEME.textMuted, fontWeight: '600', fontSize: 12 }}>
+                                {p.voted_items?.length ? p.voted_items.join(', ') : '선정 대기 중'}
+                              </Text>
                             </View>
                           ))}
                         </View>
+                      </ScrollView>
+                    </View>
+                  ) : (
+                    // Chatroom view
+                    <View
+                      style={{ flex: 1, position: 'relative' }}
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleTouchEnd}
+                    >
 
-                        {/* Columns */}
-                        <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
-                          {(() => {
-                            const base = new Date();
-                            const dates = [];
-                            for (let i = 0; i < 5; i++) {
-                              const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-                              dates.push(d.toISOString().split('T')[0]);
-                            }
+                      {/* Chatroom view */}
+                      <View style={{ flex: 1 }}>
+                        <ScrollView
+                          style={[styles.chatScroll, { flex: 1 }]}
+                          contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
+                          keyboardShouldPersistTaps="handled"
+                          ref={(ref) => {
+                            setTimeout(() => ref?.scrollToEnd({ animated: true }), 100);
+                          }}
+                        >
+                          {roomMessages.length > 0 ? (
+                            roomMessages.map((msg, index) => {
+                              const isMe = msg.sender_id === globalProfile?.id;
+                              const prevMsg = index > 0 ? roomMessages[index - 1] : null;
+                              const isSameSender = prevMsg && prevMsg.sender_id === msg.sender_id;
+                              const showAvatar = !isMe && !isSameSender;
 
-                            const getDayName = (dateStr: string) => {
-                              const days = ['일', '월', '화', '수', '목', '금', '토'];
-                              const d = new Date(dateStr);
-                              return days[d.getDay()];
-                            };
+                              // Message time formatting
+                              const messageTime = msg.created_at
+                                ? new Date(msg.created_at).toLocaleTimeString('ko-KR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: false
+                                })
+                                : '';
 
-                            return dates.map(date => {
-                              const busySlots = selectedProfile.schedule?.[date] || [];
-                              const [, m, d] = date.split('-');
                               return (
-                                <View key={date} style={{ flex: 1, alignItems: 'center' }}>
-                                  <View style={{ height: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
-                                    <Text style={{ fontSize: 8, fontWeight: 'bold', color: THEME.text }}>{getDayName(date)}</Text>
-                                    <Text style={{ fontSize: 7, color: THEME.textMuted }}>{parseInt(m, 10)}/{parseInt(d, 10)}</Text>
+                                <View key={msg.id} style={[styles.chatRow, isMe ? styles.chatRowMe : styles.chatRowOther]}>
+                                  {showAvatar ? (
+                                    <TouchableOpacity
+                                      style={[styles.chatAvatar, { backgroundColor: msg.sender_color }]}
+                                      onPress={() => handleViewProfile(msg.sender_id)}
+                                    >
+                                      <Text style={styles.chatAvatarText}>{msg.sender_name[0]}</Text>
+                                    </TouchableOpacity>
+                                  ) : !isMe ? (
+                                    <View style={{ width: 40 }} />
+                                  ) : null}
+                                  <View style={{ maxWidth: '75%' }}>
+                                    {showAvatar && !isMe && (
+                                      <TouchableOpacity onPress={() => handleViewProfile(msg.sender_id)}>
+                                        <Text style={styles.chatSenderName}>{msg.sender_name}</Text>
+                                      </TouchableOpacity>
+                                    )}
+                                    {(() => {
+                                      const isEmoticon = msg.message.startsWith('[emoticon:') && msg.message.endsWith(']');
+                                      if (isEmoticon) {
+                                        const key = msg.message.slice(10, -1);
+                                        const imageSource = EMOTICONS_MAP[key];
+                                        if (imageSource) {
+                                          return (
+                                            <View>
+                                              <View style={styles.chatEmoticonBubble}>
+                                                <Image source={imageSource} style={styles.chatEmoticonImage} />
+                                              </View>
+                                              {messageTime && (
+                                                <Text style={styles.chatMessageTime}>{messageTime}</Text>
+                                              )}
+                                            </View>
+                                          );
+                                        }
+                                      }
+                                      return (
+                                        <View>
+                                          <View
+                                            style={[
+                                              styles.chatBubble,
+                                              isMe
+                                                ? styles.chatBubbleMe
+                                                : {
+                                                  ...styles.chatBubbleOther,
+                                                  backgroundColor: msg.sender_color ? msg.sender_color + '20' : THEME.surface
+                                                }
+                                            ]}
+                                          >
+                                            <Text style={[styles.chatText, isMe ? styles.chatTextMe : styles.chatTextOther]}>
+                                              {msg.message}
+                                            </Text>
+                                          </View>
+                                          {messageTime && (
+                                            <Text style={styles.chatMessageTime}>{messageTime}</Text>
+                                          )}
+                                        </View>
+                                      );
+                                    })()}
                                   </View>
-
-                                  {['11:30', '12:00', '12:30', '13:00', '13:30', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'].map(time => {
-                                    const isBusy = !busySlots.includes(time);
-                                    return (
-                                      <View
-                                        key={`${date}-${time}`}
-                                        style={{
-                                          width: '100%',
-                                          height: 12,
-                                          backgroundColor: isBusy ? '#8b5cf6' : '#FFFFFF',
-                                          borderWidth: 0.5,
-                                          borderColor: 'rgba(0,0,0,0.05)',
-                                          borderRadius: 2,
-                                          marginVertical: 1
-                                        }}
-                                      />
-                                    );
-                                  })}
                                 </View>
                               );
-                            });
-                          })()}
+                            })
+                          ) : (
+                            <Text style={styles.emptyChatText}>
+                              대화방이 개설되었습니다. 메이트들과 인사를 나눠보세요! 👋
+                            </Text>
+                          )}
+                        </ScrollView>
+
+                        {/* Chat Input */}
+                        <View style={styles.chatInputBar}>
+                          <TouchableOpacity
+                            style={styles.emoticonToggleBtn}
+                            onPress={() => setShowEmoticonPicker(!showEmoticonPicker)}
+                          >
+                            <Smile size={22} color={showEmoticonPicker ? THEME.primary : THEME.textMuted} />
+                          </TouchableOpacity>
+                          <TextInput
+                            style={styles.chatTextInput}
+                            placeholder="메시지를 입력해 주세요..."
+                            placeholderTextColor={THEME.textMuted}
+                            value={newMessageText}
+                            onChangeText={(t) => {
+                              setNewMessageText(t);
+                              if (showEmoticonPicker) setShowEmoticonPicker(false);
+                            }}
+                            multiline
+                          />
+                          <TouchableOpacity style={styles.chatSendBtn} onPress={handleSendMessage}>
+                            <Send size={16} color="white" />
+                          </TouchableOpacity>
                         </View>
+
+                        {/* Emoticon Picker */}
+                        {showEmoticonPicker && (
+                          <View style={styles.emoticonPickerContainer}>
+                            <Text style={styles.emoticonPickerTitle}>밀챗 캐릭터 이모티콘</Text>
+                            <ScrollView showsVerticalScrollIndicator={true} style={styles.emoticonPickerScrollContainer} contentContainerStyle={styles.emoticonPickerGrid}>
+                              {Object.keys(EMOTICONS_MAP).map((key) => {
+                                const nameMap: { [k: string]: string } = {
+                                  dudu_meet: '약속두두',
+                                  dudu_sad: '슬픈두두',
+                                  dudu_love: '하트두두',
+                                  dudu_wink: '윙크두두',
+                                  dudu_shock: '깜놀두두',
+                                  moa_ok: '확인모아',
+                                  moa_hello: '안녕모아',
+                                  moa_busy: '바쁜모아',
+                                  moa_sleep: '낮잠모아',
+                                  moa_party: '파티모아',
+                                  welling_eat: '냠냠웰링',
+                                  welling_coffee: '커피웰링',
+                                  welling_starving: '배고픈웰링',
+                                  welling_full: '배부른웰링',
+                                  welling_thumbs: '최고웰링',
+                                  ttori_dutch: '정산또리',
+                                  ttori_angry: '화난또리',
+                                };
+                                return (
+                                  <TouchableOpacity
+                                    key={key}
+                                    style={styles.emoticonPickerItem}
+                                    onPress={() => handleSendEmoticon(key)}
+                                  >
+                                    <Image source={EMOTICONS_MAP[key]} style={styles.emoticonPickerImage} />
+                                    <Text style={styles.emoticonPickerName}>{nameMap[key]}</Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </ScrollView>
+                          </View>
+                        )}
                       </View>
+
+                      {/* Dropdowns */}
+                      {roomOverlay === 'schedule' && (
+                        <View style={styles.noticeDropdownOverlay}>
+                          <View style={styles.overlayHeader}>
+                            <Text style={styles.overlayHeaderTitle}>🗓️ 일정 조율</Text>
+                            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                              <TouchableOpacity
+                                style={{
+                                  backgroundColor: THEME.primary,
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 6,
+                                  borderRadius: 6,
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                                onPress={handleRunAIRecommendations}
+                              >
+                                <Sparkles size={12} color="white" />
+                                <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>AI 맞춤 추천</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
+                                <Text style={styles.overlayCloseText}>접기 ✕</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          {/* Progress Display */}
+                          {(() => {
+                            const scheduleSelectedCount = participants.filter(p =>
+                              p.schedule && Object.keys(p.schedule).length > 0
+                            ).length;
+                            const totalParticipants = participants.length;
+                            const progressPercent = totalParticipants > 0 ? (scheduleSelectedCount / totalParticipants) * 100 : 0;
+
+                            return (
+                              <View style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 16 }}>
+                                <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                                  일정 조율
+                                </Text>
+                                <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
+                                  {scheduleSelectedCount}명 중 {totalParticipants}명 선택 완료
+                                </Text>
+                                {/* Progress Bar */}
+                                <View
+                                  style={{
+                                    height: 6,
+                                    backgroundColor: THEME.border,
+                                    borderRadius: 3,
+                                    marginTop: 8,
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  <View
+                                    style={{
+                                      height: '100%',
+                                      width: `${progressPercent}%`,
+                                      backgroundColor: THEME.scheduleInProgress,
+                                    }}
+                                  />
+                                </View>
+                              </View>
+                            );
+                          })()}
+
+                          <View style={{ flex: 1, paddingHorizontal: 16 }}>
+                            {/* ScheduleGrid Container */}
+                            <View
+                              style={{
+                                borderWidth: 1,
+                                borderColor: THEME.border,
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                marginBottom: 16,
+                                flex: 1,
+                              }}
+                            >
+                              <ScheduleGrid
+                                meetingDate={currentRoom.meeting_date}
+                                participants={participants}
+                                currentParticipantId={currentParticipant?.id || ''}
+                                onSaveSchedule={handleSaveParticipantSchedule}
+                                isConfirmed={currentRoom.is_confirmed}
+                                confirmedSlot={currentRoom.confirmed_slot}
+                                onConfirmSchedule={(slot) => {
+                                  handleConfirmSchedule(slot);
+                                  setRoomOverlay(null);
+                                }}
+                                activeRooms={roomList}
+                                onUpdateRoom={fetchRooms}
+                                roomExpiresAt={currentRoom.expires_at}
+                                onRetryCoordination={handleRetryCoordination}
+                                roomId={currentRoom.id}
+                                roomOwner={roomOwnerProfileId || ''}
+                                currentProfileId={globalProfile?.id || ''}
+                              />
+                            </View>
+
+                            {/* Confirmed Time Display */}
+                            {currentRoom.is_confirmed && (
+                              <View
+                                style={{
+                                  backgroundColor: THEME.confirmed + '10',
+                                  borderLeftWidth: 4,
+                                  borderLeftColor: THEME.confirmed,
+                                  padding: 12,
+                                  borderRadius: 8,
+                                  marginBottom: 16,
+                                }}
+                              >
+                                <Text style={{ fontWeight: 'bold', color: THEME.text, fontSize: 14 }}>
+                                  ✓ 확정 시간: {currentRoom.confirmed_slot}
+                                </Text>
+                              </View>
+                            )}
+
+                            {/* Estimated Cost Display */}
+                            {currentRoom.is_confirmed && (
+                              <View
+                                style={{
+                                  backgroundColor: THEME.surface,
+                                  borderWidth: 1,
+                                  borderColor: THEME.border,
+                                  borderRadius: 8,
+                                  padding: 12,
+                                  marginBottom: 16,
+                                }}
+                              >
+                                <Text style={{ fontSize: 14, color: THEME.textMuted }}>
+                                  예상 비용
+                                </Text>
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: THEME.text, marginTop: 4 }}>
+                                  1인당 ¥12,500
+                                </Text>
+                                <TouchableOpacity
+                                  style={{
+                                    marginTop: 12,
+                                    paddingVertical: 8,
+                                    backgroundColor: THEME.menuNeeded,
+                                    borderRadius: 8,
+                                    alignItems: 'center',
+                                  }}
+                                  onPress={() => {
+                                    setRoomOverlay('dutch');
+                                  }}
+                                >
+                                  <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                                    정산 상세 보기
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      )}
+
+                      {roomOverlay === 'dutch' && (
+                        <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
+                          <View style={styles.overlayHeader}>
+                            <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
+                            <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
+                              <Text style={styles.overlayCloseText}>접기 ✕</Text>
+                            </TouchableOpacity>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <DutchPay
+                              roomId={currentRoom.id}
+                              roomTitle={currentRoom.title}
+                              currentParticipant={currentParticipant}
+                              participants={participants}
+                              globalProfile={globalProfile}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : (
+
+                // Active Rooms List
+                <ScrollView
+                  style={styles.tabBody}
+                  contentContainerStyle={{ paddingBottom: 30 }}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.primary]} />
+                  }
+                >
+                  <Text style={styles.sectionHeading}>현재 개설된 밀챗 방</Text>
+
+                  {/* Join Room Code Input */}
+                  <View style={styles.joinCard}>
+                    <View style={styles.joinRow}>
+                      <TextInput
+                        style={styles.joinInput}
+                        placeholder="초대 코드 6자리 입력"
+                        placeholderTextColor="#64748b"
+                        value={joinRoomCode}
+                        onChangeText={setJoinRoomCode}
+                        autoCapitalize="characters"
+                        maxLength={6}
+                      />
+                      <TouchableOpacity style={styles.joinBtn} onPress={handleJoinRoomByCode}>
+                        <Text style={styles.joinBtnText}>입장</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* My Dutch Pay Ledger Button */}
+                  <TouchableOpacity
+                    style={styles.globalDutchPayBtnCard}
+                    onPress={() => {
+                      if (isProfileIncomplete) {
+                        Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
+                        return;
+                      }
+                      setShowGlobalDutchPay(true);
+                    }}
+                  >
+                    <View style={styles.globalDutchPayBtnCardContent}>
+                      <Text style={styles.globalDutchPayBtnCardTitle}>💸 나의 N빵 정산 대장</Text>
+                      <Text style={styles.globalDutchPayBtnCardSubtitle}>
+                        방이 폭파된 후에도 남아있는 미완료 정산 내역을 확인하고 송금할 수 있습니다.
+                      </Text>
+                    </View>
+                    <Text style={styles.globalDutchPayBtnCardArrow}>보기 ➜</Text>
+                  </TouchableOpacity>
+
+                  {/* Room Card List */}
+                  {roomsLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={THEME.primary} />
+                      <Text style={styles.loadingText}>방 목록을 불러오는 중...</Text>
+                    </View>
+                  ) : roomList.length > 0 ? (
+                    <View style={{ gap: 12 }}>
+                      {roomList.map(room => {
+                        // Calculate unread count for this room
+                        const roomUnreadCount = appNotifications.filter(notif => notif.room_id === room.id).length;
+
+                        return (
+                          <RoomCard
+                            key={room.id}
+                            room={room}
+                            unreadCount={roomUnreadCount}
+                            onPress={() => {
+                              setCurrentRoom(room);
+                              setRoomSubTab('schedule');
+                            }}
+                            onChatPress={() => {
+                              setCurrentRoom(room);
+                              setRoomSubTab('schedule');
+                              setActiveTab('addons');
+                            }}
+                            onMenuPress={() => {
+                              setCurrentRoom(room);
+                              setRoomSubTab('menu');
+                              setActiveTab('addons');
+                            }}
+                            onSchedulePress={() => {
+                              setCurrentRoom(room);
+                              setRoomOverlay('schedule');
+                              setActiveTab('addons');
+                            }}
+                          />
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyBox}>
+                      <Text style={styles.emptyText}>참여 중인 밀챗 방이 없습니다.</Text>
+                      <Text style={styles.emptySubText}>[일정 조정] 탭에서 방을 개설하거나 초대코드로 참여해 보세요.</Text>
                     </View>
                   )}
                 </ScrollView>
-              </View>
-            )}
-          </View>
+              )}
+            </View>
+          )}
+
         </View>
-      </Modal>
 
 
+        {/* Bottom Tab Navigation */}
+        {!currentRoom && (
+          <View style={styles.tabNavigation}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'schedule' && styles.tabButtonActive]}
+              onPress={() => handleTabChange('schedule')}
+            >
+              <CalendarIcon size={20} color={activeTab === 'schedule' ? THEME.primary : THEME.textMuted} />
+              <Text style={[styles.tabButtonText, activeTab === 'schedule' && styles.tabButtonTextActive]}>
+                일정 조율
+              </Text>
+            </TouchableOpacity>
 
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettingsModal}
-        animationType="slide"
-        onRequestClose={() => setShowSettingsModal(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} {...settingsPanResponder.panHandlers}>
-          <ProfileSetup
-            ref={profileSetupRef}
-            initialData={globalProfile}
-            onSave={(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude, isTasteGame) => {
-              handleSaveProfile(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude);
-              if (!isTasteGame) {
-                setShowSettingsModal(false);
-              }
-            }}
-            onSaveSchedule={handleSaveProfileSchedule}
-            roomParticipants={participants}
-            roomCode={currentRoom?.code}
-            activeRooms={currentRoom ? [currentRoom] : []}
-            onLogout={() => {
-              handleLogout();
-              setShowSettingsModal(false);
-            }}
-            onDeleteAccount={handleDeleteAccount}
-            onExportData={handleExportData}
-            onViewChange={handleSettingsViewChange}
-            onSwipeBackBlockChange={(blocked) => setIsSwipeBackBlocked(blocked)}
-            onClose={() => setShowSettingsModal(false)}
-            onSearchFriend={handleSearchFriend}
-            onGetRecommendedFriends={getRecommendedFriends}
-            onFollowUser={handleFollowUser}
-            searchResults={searchFriendResults}
-            recommendedFriends={recommendedFriends}
-            isSearching={isSearchingFriends}
-          />
-        </SafeAreaView>
-      </Modal>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'addons' && styles.tabButtonActive]}
+              onPress={() => handleTabChange('addons')}
+            >
+              <Sparkles size={20} color={activeTab === 'addons' ? THEME.primary : THEME.textMuted} />
+              <Text style={[styles.tabButtonText, activeTab === 'addons' && styles.tabButtonTextActive]}>
+                채팅방
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {/* Room Info Modal */}
-      <Modal
-        visible={showRoomInfoModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowRoomInfoModal(false)}
-      >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-          <View style={[styles.modalContent, { width: '90%', maxWidth: 360, position: 'relative' }]}>
-            {currentRoom && (
-              <View>
-                {!isEditingRoomTitle && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
-                    <TouchableOpacity
-                      style={{ padding: 4 }}
-                      onPress={() => setShowRoomInfoModal(false)}
-                    >
-                      <X size={20} color={THEME.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                )}
+        {/* Profile View Modal */}
+        <Modal
+          visible={showProfileModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowProfileModal(false)}
+        >
+          <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+            <View style={[styles.modalContent, { width: '90%', maxWidth: 350, position: 'relative' }]}>
+              {selectedProfile && (
+                <View>
+                  {/* 우측 상단 X 닫기 버튼 */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      zIndex: 10,
+                      padding: 8
+                    }}
+                    onPress={() => setShowProfileModal(false)}
+                  >
+                    <X size={20} color={THEME.textMuted} />
+                  </TouchableOpacity>
 
-                <View style={{ marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-                  {isEditingRoomTitle ? (
-                    <View style={{ gap: 8 }}>
-                      <TextInput
-                        style={{
-                          backgroundColor: THEME.input,
-                          borderWidth: 1,
-                          borderColor: THEME.border,
-                          borderRadius: 8,
-                          color: THEME.text,
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          fontSize: 14,
-                        }}
-                        value={editingRoomTitle}
-                        onChangeText={setEditingRoomTitle}
-                        placeholder="방 이름 입력"
-                        placeholderTextColor={THEME.textMuted}
-                        maxLength={20}
-                      />
-                      <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'flex-end' }}>
-                        <TouchableOpacity
-                          style={{
-                            backgroundColor: '#F4F3EA',
-                            borderWidth: 1,
-                            borderColor: THEME.border,
-                            borderRadius: 6,
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                          }}
-                          onPress={() => {
-                            setIsEditingRoomTitle(false);
-                            setEditingRoomTitle(currentRoom.title);
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, color: THEME.text, fontWeight: 'bold' }}>취소</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{
-                            backgroundColor: THEME.primary,
-                            borderRadius: 6,
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                          }}
-                          onPress={handleUpdateRoomTitle}
-                        >
-                          <Text style={{ fontSize: 11, color: 'white', fontWeight: 'bold' }}>저장</Text>
-                        </TouchableOpacity>
-                      </View>
+                  <View style={{ alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
+                    <View style={[styles.modalProfileAvatar, { backgroundColor: selectedProfile.avatar_color }]}>
+                      <Text style={styles.modalProfileAvatarText}>{selectedProfile.name[0]}</Text>
                     </View>
-                  ) : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text, flex: 1 }}>
-                        {currentRoom.title}
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text, marginTop: 8 }}>
+                      {selectedProfile.name}
+                    </Text>
+                    {selectedProfile.personal_data?.bio && (
+                      <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
+                        {selectedProfile.personal_data.bio}
                       </Text>
+                    )}
+
+                    {globalProfile && selectedProfile.id !== globalProfile.id && (
+                      (() => {
+                        const isFriend = myFollows.some(f => f.following_id === selectedProfile.id);
+                        if (isFriend) {
+                          return (
+                            <View
+                              style={{
+                                marginTop: 12,
+                                backgroundColor: '#f1f5f9',
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 20,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderWidth: 1,
+                                borderColor: THEME.border
+                              }}
+                            >
+                              <Check size={14} color="#64748b" style={{ marginRight: 4 }} />
+                              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748b' }}>친구 목록에 있음</Text>
+                            </View>
+                          );
+                        } else {
+                          return (
+                            <TouchableOpacity
+                              style={{
+                                marginTop: 12,
+                                backgroundColor: THEME.primary,
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 20,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onPress={() => handleAddFriend(selectedProfile.id)}
+                            >
+                              <Plus size={14} color="white" style={{ marginRight: 4 }} />
+                              <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'white' }}>친구 추가하기</Text>
+                            </TouchableOpacity>
+                          );
+                        }
+                      })()
+                    )}
+                  </View>
+
+                  <ScrollView style={{ maxHeight: 300 }}>
+                    {isFieldVisible('allergies', selectedProfile) && selectedProfile.personal_data?.allergies?.length > 0 && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>알레르기</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.allergies.join(', ')}</Text>
+                      </View>
+                    )}
+                    {isFieldVisible('likes', selectedProfile) && selectedProfile.personal_data?.likes?.length > 0 && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>좋아하는 음식</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.likes.join(', ')}</Text>
+                      </View>
+                    )}
+                    {isFieldVisible('dislikes', selectedProfile) && selectedProfile.personal_data?.dislikes?.length > 0 && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>싫어하는 음식</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.dislikes.join(', ')}</Text>
+                      </View>
+                    )}
+                    {isFieldVisible('health_issues', selectedProfile) && selectedProfile.personal_data?.health_issues?.length > 0 && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>건강 주의사항</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.health_issues.join(', ')}</Text>
+                      </View>
+                    )}
+                    {isFieldVisible('birthdate', selectedProfile) && selectedProfile.personal_data?.birthdate && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>생년월일</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.birthdate}</Text>
+                      </View>
+                    )}
+                    {isFieldVisible('gender', selectedProfile) && selectedProfile.personal_data?.gender && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 4 }}>성별</Text>
+                        <Text style={{ fontSize: 12, color: THEME.text }}>{selectedProfile.personal_data.gender}</Text>
+                      </View>
+                    )}
+                    {/* 5-Day Busy Schedule Mini Grid */}
+                    {selectedProfile.schedule && (
+                      <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: THEME.border }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.text, marginBottom: 4 }}>
+                          📅 5일간 바쁜 시간대 요약
+                        </Text>
+                        <Text style={{ fontSize: 10, color: THEME.textMuted, marginBottom: 8 }}>
+                          보라색 슬롯은 친구가 바쁜 시간대(약속 불가)입니다.
+                        </Text>
+
+                        {/* Mini Grid */}
+                        <View style={{ flexDirection: 'row', backgroundColor: THEME.surfaceDarker, borderRadius: 8, padding: 8 }}>
+                          {/* Time Axis */}
+                          <View style={{ marginRight: 6, gap: 2 }}>
+                            <View style={{ height: 20, justifyContent: 'center' }}><Text style={{ fontSize: 8, color: 'transparent' }}>시간</Text></View>
+                            {['11:30', '12:00', '12:30', '13:00', '13:30', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'].map(t => (
+                              <View key={t} style={{ height: 12, justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 8, color: THEME.textMuted, fontWeight: '600' }}>{t}</Text>
+                              </View>
+                            ))}
+                          </View>
+
+                          {/* Columns */}
+                          <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+                            {(() => {
+                              const base = new Date();
+                              const dates = [];
+                              for (let i = 0; i < 5; i++) {
+                                const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+                                dates.push(d.toISOString().split('T')[0]);
+                              }
+
+                              const getDayName = (dateStr: string) => {
+                                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                const d = new Date(dateStr);
+                                return days[d.getDay()];
+                              };
+
+                              return dates.map(date => {
+                                const busySlots = selectedProfile.schedule?.[date] || [];
+                                const [, m, d] = date.split('-');
+                                return (
+                                  <View key={date} style={{ flex: 1, alignItems: 'center' }}>
+                                    <View style={{ height: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
+                                      <Text style={{ fontSize: 8, fontWeight: 'bold', color: THEME.text }}>{getDayName(date)}</Text>
+                                      <Text style={{ fontSize: 7, color: THEME.textMuted }}>{parseInt(m, 10)}/{parseInt(d, 10)}</Text>
+                                    </View>
+
+                                    {['11:30', '12:00', '12:30', '13:00', '13:30', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'].map(time => {
+                                      const isBusy = !busySlots.includes(time);
+                                      return (
+                                        <View
+                                          key={`${date}-${time}`}
+                                          style={{
+                                            width: '100%',
+                                            height: 12,
+                                            backgroundColor: isBusy ? '#8b5cf6' : '#FFFFFF',
+                                            borderWidth: 0.5,
+                                            borderColor: 'rgba(0,0,0,0.05)',
+                                            borderRadius: 2,
+                                            marginVertical: 1
+                                          }}
+                                        />
+                                      );
+                                    })}
+                                  </View>
+                                );
+                              });
+                            })()}
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+
+
+        {/* Settings Modal */}
+        <Modal
+          visible={showSettingsModal}
+          animationType="slide"
+          onRequestClose={() => setShowSettingsModal(false)}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} {...settingsPanResponder.panHandlers}>
+            <ProfileSetup
+              ref={profileSetupRef}
+              initialData={globalProfile}
+              onSave={(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude, isTasteGame) => {
+                handleSaveProfile(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude);
+                if (!isTasteGame) {
+                  setShowSettingsModal(false);
+                }
+              }}
+              onSaveSchedule={handleSaveProfileSchedule}
+              roomParticipants={participants}
+              roomCode={currentRoom?.code}
+              activeRooms={currentRoom ? [currentRoom] : []}
+              onLogout={() => {
+                handleLogout();
+                setShowSettingsModal(false);
+              }}
+              onDeleteAccount={handleDeleteAccount}
+              onExportData={handleExportData}
+              onViewChange={handleSettingsViewChange}
+              onSwipeBackBlockChange={(blocked) => setIsSwipeBackBlocked(blocked)}
+              onClose={() => setShowSettingsModal(false)}
+              onSearchFriend={handleSearchFriend}
+              onGetRecommendedFriends={getRecommendedFriends}
+              onFollowUser={handleFollowUser}
+              searchResults={searchFriendResults}
+              recommendedFriends={recommendedFriends}
+              isSearching={isSearchingFriends}
+            />
+          </SafeAreaView>
+        </Modal>
+
+        {/* Room Info Modal */}
+        <Modal
+          visible={showRoomInfoModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowRoomInfoModal(false)}
+        >
+          <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+            <View style={[styles.modalContent, { width: '90%', maxWidth: 360, position: 'relative' }]}>
+              {currentRoom && (
+                <View>
+                  {!isEditingRoomTitle && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
                       <TouchableOpacity
-                        style={{
-                          backgroundColor: THEME.avatarBg,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 6,
-                          borderWidth: 1,
-                          borderColor: THEME.border
-                        }}
-                        onPress={() => setIsEditingRoomTitle(true)}
+                        style={{ padding: 4 }}
+                        onPress={() => setShowRoomInfoModal(false)}
                       >
-                        <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>이름 변경</Text>
+                        <X size={20} color={THEME.textMuted} />
                       </TouchableOpacity>
                     </View>
                   )}
-                  <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
-                    약속 방 상세 정보
-                  </Text>
-                </View>
 
-                {/* 방 상세 정보 표시 영역 */}
-                <View style={{ gap: 12, marginBottom: 16 }}>
-                  {/* 코드 */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted }}>초대 코드</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.primary }}>{currentRoom.code}</Text>
-                      <TouchableOpacity 
-                        style={{ backgroundColor: THEME.avatarBg, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}
-                        onPress={handleShareRoom}
-                      >
-                        <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>공유</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* 일시 */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted }}>약속 일시</Text>
-                    <Text style={{ fontSize: 12, color: THEME.text }}>{getMeetingDateDisplay(currentRoom)}</Text>
-                  </View>
-
-                  {/* 약속 장소 */}
-                  <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12 }}>
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 6 }}>약속 장소</Text>
-                    {isEditingRoomLocation ? (
+                  <View style={{ marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
+                    {isEditingRoomTitle ? (
                       <View style={{ gap: 8 }}>
                         <TextInput
                           style={{
@@ -4438,90 +4339,48 @@ ${inviteLink}
                             color: THEME.text,
                             paddingHorizontal: 12,
                             paddingVertical: 8,
-                            fontSize: 13,
+                            fontSize: 14,
                           }}
-                          value={editingRoomLocationName}
-                          onChangeText={setEditingRoomLocationName}
-                          placeholder="장소 이름 입력"
+                          value={editingRoomTitle}
+                          onChangeText={setEditingRoomTitle}
+                          placeholder="방 이름 입력"
                           placeholderTextColor={THEME.textMuted}
+                          maxLength={20}
                         />
-                        <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'flex-end' }}>
                           <TouchableOpacity
                             style={{
-                              backgroundColor: THEME.avatarBg,
+                              backgroundColor: '#F4F3EA',
                               borderWidth: 1,
                               borderColor: THEME.border,
                               borderRadius: 6,
                               paddingHorizontal: 10,
                               paddingVertical: 5,
                             }}
-                            onPress={() => handleSearchLocation(editingRoomLocationName)}
+                            onPress={() => {
+                              setIsEditingRoomTitle(false);
+                              setEditingRoomTitle(currentRoom.title);
+                            }}
                           >
-                            <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: 'bold' }}>🔍 장소 검색</Text>
+                            <Text style={{ fontSize: 11, color: THEME.text, fontWeight: 'bold' }}>취소</Text>
                           </TouchableOpacity>
-
-                          <View style={{ flexDirection: 'row', gap: 6 }}>
-                            <TouchableOpacity
-                              style={{
-                                backgroundColor: '#F4F3EA',
-                                borderWidth: 1,
-                                borderColor: THEME.border,
-                                borderRadius: 6,
-                                paddingHorizontal: 10,
-                                paddingVertical: 5,
-                              }}
-                              onPress={() => {
-                                setIsEditingRoomLocation(false);
-                                setEditingRoomLocationName(currentRoom.location_name || '');
-                                setEditingRoomLatitude(currentRoom.latitude || 37.5665);
-                                setEditingRoomLongitude(currentRoom.longitude || 126.9780);
-                                setShowLocationResults(false);
-                              }}
-                            >
-                              <Text style={{ fontSize: 11, color: THEME.text, fontWeight: 'bold' }}>취소</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={{
-                                backgroundColor: THEME.primary,
-                                borderRadius: 6,
-                                paddingHorizontal: 10,
-                                paddingVertical: 5,
-                              }}
-                              onPress={handleUpdateRoomLocation}
-                            >
-                              <Text style={{ fontSize: 11, color: 'white', fontWeight: 'bold' }}>저장</Text>
-                            </TouchableOpacity>
-                          </View>
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: THEME.primary,
+                              borderRadius: 6,
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                            }}
+                            onPress={handleUpdateRoomTitle}
+                          >
+                            <Text style={{ fontSize: 11, color: 'white', fontWeight: 'bold' }}>저장</Text>
+                          </TouchableOpacity>
                         </View>
-
-                        {/* 검색 결과: 버튼 행의 바깥에 배치하여 온전한 가로 너비를 차지하게 함 */}
-                        {showLocationResults && locationSearchResults.length > 0 && (
-                          <ScrollView style={{ maxHeight: 150, marginTop: 4, borderWidth: 1, borderColor: THEME.border, borderRadius: 6, backgroundColor: THEME.surface }}>
-                            {locationSearchResults.map((result, idx) => (
-                              <TouchableOpacity
-                                key={idx}
-                                style={{
-                                  padding: 10,
-                                  borderBottomWidth: idx < locationSearchResults.length - 1 ? 1 : 0,
-                                  borderBottomColor: THEME.border
-                                }}
-                                onPress={() => handleSelectLocation(result)}
-                              >
-                                <Text style={{ fontSize: 12, fontWeight: '600', color: THEME.text }}>
-                                  {result.place_name}
-                                </Text>
-                                <Text style={{ fontSize: 10, color: THEME.textMuted, marginTop: 2 }}>
-                                  {result.address_name}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        )}
                       </View>
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 12, color: THEME.text, flex: 1 }}>
-                          {currentRoom.location_name ? `${currentRoom.location_name} (위도: ${currentRoom.latitude?.toFixed(2)}, 경도: ${currentRoom.longitude?.toFixed(2)})` : '설정된 장소 없음'}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text, flex: 1 }}>
+                          {currentRoom.title}
                         </Text>
                         <TouchableOpacity
                           style={{
@@ -4532,422 +4391,563 @@ ${inviteLink}
                             borderWidth: 1,
                             borderColor: THEME.border
                           }}
-                          onPress={() => setIsEditingRoomLocation(true)}
+                          onPress={() => setIsEditingRoomTitle(true)}
                         >
-                          <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>장소 설정</Text>
+                          <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>이름 변경</Text>
                         </TouchableOpacity>
                       </View>
                     )}
+                    <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
+                      약속 방 상세 정보
+                    </Text>
                   </View>
-                </View>
 
-                {/* 약속 테마 색상 변경 */}
-                <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12, marginBottom: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 8 }}>
-                    약속 테마 색상 변경
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                    {PALETTE_COLORS.map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 12,
-                          backgroundColor: c,
-                          borderWidth: (currentRoom.color || '#23A455') === c ? 2 : 0,
-                          borderColor: THEME.text,
-                          justifyContent: 'center',
-                          alignItems: 'center'
-                        }}
-                        onPress={() => handleChangeRoomColor(c)}
-                      >
-                        {(currentRoom.color || '#23A455') === c && (
-                          <Check size={12} color="white" />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                {/* 구성 멤버 목록 */}
-                <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 8 }}>
-                    구성 멤버 ({participants.length}명)
-                  </Text>
-
-                  {participantsLoading ? (
-                    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                      <ActivityIndicator size="small" color={THEME.primary} />
-                      <Text style={{ color: THEME.textMuted, fontSize: 11, marginTop: 8 }}>멤버 정보를 불러오는 중...</Text>
+                  {/* 방 상세 정보 표시 영역 */}
+                  <View style={{ gap: 12, marginBottom: 16 }}>
+                    {/* 코드 */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted }}>초대 코드</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.primary }}>{currentRoom.code}</Text>
+                        <TouchableOpacity
+                          style={{ backgroundColor: THEME.avatarBg, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}
+                          onPress={handleShareRoom}
+                        >
+                          <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>공유</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  ) : (
-                    <ScrollView style={{ maxHeight: 200 }} contentContainerStyle={{ gap: 8 }}>
-                      {participants.length > 0 ? (
-                        participants.map((member) => (
-                          <View
-                            key={member.id}
+
+                    {/* 일시 */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted }}>약속 일시</Text>
+                      <Text style={{ fontSize: 12, color: THEME.text }}>{getMeetingDateDisplay(currentRoom)}</Text>
+                    </View>
+
+                    {/* 약속 장소 */}
+                    <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12 }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 6 }}>약속 장소</Text>
+                      {isEditingRoomLocation ? (
+                        <View style={{ gap: 8 }}>
+                          <TextInput
                             style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              padding: 8,
-                              backgroundColor: '#F4F3EA',
-                              borderRadius: 8,
+                              backgroundColor: THEME.input,
                               borderWidth: 1,
                               borderColor: THEME.border,
-                              gap: 8
+                              borderRadius: 8,
+                              color: THEME.text,
+                              paddingHorizontal: 12,
+                              paddingVertical: 8,
+                              fontSize: 13,
                             }}
-                          >
+                            value={editingRoomLocationName}
+                            onChangeText={setEditingRoomLocationName}
+                            placeholder="장소 이름 입력"
+                            placeholderTextColor={THEME.textMuted}
+                          />
+                          <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'space-between', alignItems: 'center' }}>
                             <TouchableOpacity
+                              style={{
+                                backgroundColor: THEME.avatarBg,
+                                borderWidth: 1,
+                                borderColor: THEME.border,
+                                borderRadius: 6,
+                                paddingHorizontal: 10,
+                                paddingVertical: 5,
+                              }}
+                              onPress={() => handleSearchLocation(editingRoomLocationName)}
+                            >
+                              <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: 'bold' }}>🔍 장소 검색</Text>
+                            </TouchableOpacity>
+
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                              <TouchableOpacity
+                                style={{
+                                  backgroundColor: '#F4F3EA',
+                                  borderWidth: 1,
+                                  borderColor: THEME.border,
+                                  borderRadius: 6,
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 5,
+                                }}
+                                onPress={() => {
+                                  setIsEditingRoomLocation(false);
+                                  setEditingRoomLocationName(currentRoom.location_name || '');
+                                  setEditingRoomLatitude(currentRoom.latitude || 37.5665);
+                                  setEditingRoomLongitude(currentRoom.longitude || 126.9780);
+                                  setShowLocationResults(false);
+                                }}
+                              >
+                                <Text style={{ fontSize: 11, color: THEME.text, fontWeight: 'bold' }}>취소</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={{
+                                  backgroundColor: THEME.primary,
+                                  borderRadius: 6,
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 5,
+                                }}
+                                onPress={handleUpdateRoomLocation}
+                              >
+                                <Text style={{ fontSize: 11, color: 'white', fontWeight: 'bold' }}>저장</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          {/* 검색 결과: 버튼 행의 바깥에 배치하여 온전한 가로 너비를 차지하게 함 */}
+                          {showLocationResults && locationSearchResults.length > 0 && (
+                            <ScrollView style={{ maxHeight: 150, marginTop: 4, borderWidth: 1, borderColor: THEME.border, borderRadius: 6, backgroundColor: THEME.surface }}>
+                              {locationSearchResults.map((result, idx) => (
+                                <TouchableOpacity
+                                  key={idx}
+                                  style={{
+                                    padding: 10,
+                                    borderBottomWidth: idx < locationSearchResults.length - 1 ? 1 : 0,
+                                    borderBottomColor: THEME.border
+                                  }}
+                                  onPress={() => handleSelectLocation(result)}
+                                >
+                                  <Text style={{ fontSize: 12, fontWeight: '600', color: THEME.text }}>
+                                    {result.place_name}
+                                  </Text>
+                                  <Text style={{ fontSize: 10, color: THEME.textMuted, marginTop: 2 }}>
+                                    {result.address_name}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          )}
+                        </View>
+                      ) : (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 12, color: THEME.text, flex: 1 }}>
+                            {currentRoom.location_name ? `${currentRoom.location_name} (위도: ${currentRoom.latitude?.toFixed(2)}, 경도: ${currentRoom.longitude?.toFixed(2)})` : '설정된 장소 없음'}
+                          </Text>
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: THEME.avatarBg,
+                              paddingHorizontal: 8,
+                              paddingVertical: 4,
+                              borderRadius: 6,
+                              borderWidth: 1,
+                              borderColor: THEME.border
+                            }}
+                            onPress={() => setIsEditingRoomLocation(true)}
+                          >
+                            <Text style={{ fontSize: 10, color: THEME.text, fontWeight: 'bold' }}>장소 설정</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* 약속 테마 색상 변경 */}
+                  <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 8 }}>
+                      약속 테마 색상 변경
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                      {PALETTE_COLORS.map((c) => (
+                        <TouchableOpacity
+                          key={c}
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: c,
+                            borderWidth: (currentRoom.color || '#23A455') === c ? 2 : 0,
+                            borderColor: THEME.text,
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                          }}
+                          onPress={() => handleChangeRoomColor(c)}
+                        >
+                          {(currentRoom.color || '#23A455') === c && (
+                            <Check size={12} color="white" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* 구성 멤버 목록 */}
+                  <View style={{ borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: THEME.textMuted, marginBottom: 8 }}>
+                      구성 멤버 ({participants.length}명)
+                    </Text>
+
+                    {participantsLoading ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                        <ActivityIndicator size="small" color={THEME.primary} />
+                        <Text style={{ color: THEME.textMuted, fontSize: 11, marginTop: 8 }}>멤버 정보를 불러오는 중...</Text>
+                      </View>
+                    ) : (
+                      <ScrollView style={{ maxHeight: 200 }} contentContainerStyle={{ gap: 8 }}>
+                        {participants.length > 0 ? (
+                          participants.map((member) => (
+                            <View
+                              key={member.id}
                               style={{
                                 flexDirection: 'row',
                                 alignItems: 'center',
-                                flex: 1
-                              }}
-                              onPress={() => {
-                                setShowRoomInfoModal(false);
-                                if (member.profile_id) {
-                                  handleViewProfile(member.profile_id);
-                                } else {
-                                  Alert.alert('알림', '프로필 정보가 없는 사용자입니다.');
-                                }
+                                padding: 8,
+                                backgroundColor: '#F4F3EA',
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: THEME.border,
+                                gap: 8
                               }}
                             >
-                              <View
-                                style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 16,
-                                  backgroundColor: member.avatar_color || THEME.primary,
-                                  justifyContent: 'center',
-                                  alignItems: 'center',
-                                  marginRight: 10
-                                }}
-                              >
-                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>
-                                  {(member.name || '알')[0]}
-                                </Text>
-                              </View>
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.text }}>
-                                  {member.name}
-                                  {member.profile_id === roomOwnerProfileId && (
-                                    <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: 'bold' }}> (방장)</Text>
-                                  )}
-                                </Text>
-                              </View>
-                              <Text style={{ fontSize: 11, color: THEME.textMuted }}>프로필 ➜</Text>
-                            </TouchableOpacity>
-
-                            {/* Kick button: only visible to host, and cannot kick themselves */}
-                            {roomOwnerProfileId === globalProfile?.id && member.profile_id !== roomOwnerProfileId && (
                               <TouchableOpacity
                                 style={{
-                                  backgroundColor: '#FEE2E2',
-                                  borderColor: '#EF4444',
-                                  borderWidth: 1,
-                                  paddingHorizontal: 8,
-                                  paddingVertical: 4,
-                                  borderRadius: 6
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  flex: 1
                                 }}
-                                onPress={() => handleKickParticipant(member.id, member.name)}
+                                onPress={() => {
+                                  setShowRoomInfoModal(false);
+                                  if (member.profile_id) {
+                                    handleViewProfile(member.profile_id);
+                                  } else {
+                                    Alert.alert('알림', '프로필 정보가 없는 사용자입니다.');
+                                  }
+                                }}
                               >
-                                <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: 'bold' }}>추방</Text>
+                                <View
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    backgroundColor: member.avatar_color || THEME.primary,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 10
+                                  }}
+                                >
+                                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>
+                                    {(member.name || '알')[0]}
+                                  </Text>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.text }}>
+                                    {member.name}
+                                    {member.profile_id === roomOwnerProfileId && (
+                                      <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: 'bold' }}> (방장)</Text>
+                                    )}
+                                  </Text>
+                                </View>
+                                <Text style={{ fontSize: 11, color: THEME.textMuted }}>프로필 ➜</Text>
                               </TouchableOpacity>
-                            )}
-                          </View>
-                        ))
-                      ) : (
-                        <Text style={{ color: THEME.textMuted, fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>
-                          멤버가 없습니다.
-                        </Text>
-                      )}
-                    </ScrollView>
-                  )}
+
+                              {/* Kick button: only visible to host, and cannot kick themselves */}
+                              {roomOwnerProfileId === globalProfile?.id && member.profile_id !== roomOwnerProfileId && (
+                                <TouchableOpacity
+                                  style={{
+                                    backgroundColor: '#FEE2E2',
+                                    borderColor: '#EF4444',
+                                    borderWidth: 1,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 4,
+                                    borderRadius: 6
+                                  }}
+                                  onPress={() => handleKickParticipant(member.id, member.name)}
+                                >
+                                  <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: 'bold' }}>추방</Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={{ color: THEME.textMuted, fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>
+                            멤버가 없습니다.
+                          </Text>
+                        )}
+                      </ScrollView>
+                    )}
+                  </View>
+
                 </View>
-
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Global Dutch Pay Modal */}
-      <Modal
-        visible={showGlobalDutchPay}
-        animationType="slide"
-        onRequestClose={() => setShowGlobalDutchPay(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} {...globalDutchPayPanResponder.panHandlers}>
-          <View style={styles.globalDutchPayHeader}>
-            <Text style={styles.globalDutchPayHeaderTitle}>💸 나의 N빵 정산 대장</Text>
-            <TouchableOpacity
-              style={styles.globalDutchPayCloseBtn}
-              onPress={() => setShowGlobalDutchPay(false)}
-            >
-              <X size={20} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
-          <View style={{ flex: 1 }}>
-            <DutchPay
-              globalProfile={globalProfile}
-            />
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Slide-Up Create Room Modal with Step-by-Step Flow */}
-      <Modal
-        visible={showCreateModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setShowCreateModal(false);
-          setCurrentCreateStep(1);
-          setNewRoomTitle('');
-          setNewRoomDate('');
-          setCreateRoomSelectedFriends([]);
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { marginBottom: 120, width: '90%', maxWidth: 400, borderRadius: 16 }]}>
-            {/* Modal Header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingBottom: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: THEME.border,
-              }}
-            >
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
-                새 약속 만들기
-              </Text>
+        {/* Global Dutch Pay Modal */}
+        <Modal
+          visible={showGlobalDutchPay}
+          animationType="slide"
+          onRequestClose={() => setShowGlobalDutchPay(false)}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} {...globalDutchPayPanResponder.panHandlers}>
+            <View style={styles.globalDutchPayHeader}>
+              <Text style={styles.globalDutchPayHeaderTitle}>💸 나의 N빵 정산 대장</Text>
               <TouchableOpacity
-                onPress={() => {
-                  setShowCreateModal(false);
-                  setCurrentCreateStep(1);
-                  setNewRoomTitle('');
-                  setNewRoomDate('');
-                  setCreateRoomSelectedFriends([]);
-                }}
+                style={styles.globalDutchPayCloseBtn}
+                onPress={() => setShowGlobalDutchPay(false)}
               >
-                <X size={24} color={THEME.text} />
+                <X size={20} color={THEME.text} />
               </TouchableOpacity>
             </View>
-
-            {/* Step Progress Indicator */}
-            <View style={{ flexDirection: 'row', marginBottom: 16, marginTop: 16, gap: 2 }}>
-              {[1, 2, 3].map(step => (
-                <View
-                  key={step}
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    backgroundColor: step <= currentCreateStep ? THEME.menuNeeded : THEME.border,
-                    borderRadius: 3,
-                  }}
-                />
-              ))}
+            <View style={{ flex: 1 }}>
+              <DutchPay
+                globalProfile={globalProfile}
+              />
             </View>
-            <Text style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 16 }}>
-              Step {currentCreateStep} / 3
-            </Text>
+          </SafeAreaView>
+        </Modal>
 
-            {/* Step 1: Appointment Name */}
-            {currentCreateStep === 1 && (
-              <View>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
-                  약속 이름
-                </Text>
-                <TextInput
-                  style={{
-                    borderWidth: 1,
-                    borderColor: THEME.border,
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 14,
-                    color: THEME.text,
-                    marginBottom: 16,
-                  }}
-                  placeholder="예) 회사 팀 점심"
-                  placeholderTextColor={THEME.textMuted}
-                  value={newRoomTitle}
-                  onChangeText={setNewRoomTitle}
-                />
-              </View>
-            )}
-
-            {/* Step 2: Date Selection */}
-            {currentCreateStep === 2 && (
-              <View>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
-                  약속 날짜
+        {/* Slide-Up Create Room Modal with Step-by-Step Flow */}
+        <Modal
+          visible={showCreateModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setShowCreateModal(false);
+            setCurrentCreateStep(1);
+            setNewRoomTitle('');
+            setNewRoomDate('');
+            setCreateRoomSelectedFriends([]);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { marginBottom: 120, width: '90%', maxWidth: 400, borderRadius: 16 }]}>
+              {/* Modal Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingBottom: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: THEME.border,
+                }}
+              >
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
+                  새 약속 만들기
                 </Text>
                 <TouchableOpacity
-                  style={{
-                    borderWidth: 1,
-                    borderColor: THEME.border,
-                    borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 16,
-                  }}
                   onPress={() => {
-                    // Simple date input - using native date picker would be ideal
-                    // For now, we'll use text input for date selection (YYYY-MM-DD format)
-                    // You can integrate a date picker library here if needed
-                  }}
-                >
-                  <Text style={{ color: newRoomDate ? THEME.text : THEME.textMuted, fontSize: 14 }}>
-                    {newRoomDate || '날짜를 선택해주세요'}
-                  </Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={{
-                    borderWidth: 1,
-                    borderColor: THEME.border,
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 14,
-                    color: THEME.text,
-                    marginBottom: 16,
-                  }}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={THEME.textMuted}
-                  value={newRoomDate}
-                  onChangeText={setNewRoomDate}
-                />
-              </View>
-            )}
-
-            {/* Step 3: Invite Friends */}
-            {currentCreateStep === 3 && (
-              <View>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
-                  친구 초대하기 (선택)
-                </Text>
-                {myFollows.length === 0 ? (
-                  <Text style={{ fontSize: 12, color: THEME.textMuted, marginVertical: 4 }}>
-                    등록된 친구가 없습니다.
-                  </Text>
-                ) : (
-                  <ScrollView
-                    style={{
-                      maxHeight: 300,
-                      marginBottom: 16,
-                      borderWidth: 1,
-                      borderColor: THEME.border,
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      backgroundColor: THEME.background,
-                    }}
-                    nestedScrollEnabled={true}
-                  >
-                    {myFollows.map(f => {
-                      const profile = f.profiles;
-                      if (!profile) return null;
-                      const isSelected = createRoomSelectedFriends.includes(f.following_id);
-                      return (
-                        <TouchableOpacity
-                          key={f.id}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingVertical: 8,
-                            borderBottomWidth: 1,
-                            borderBottomColor: THEME.border,
-                          }}
-                          onPress={() => {
-                            if (isSelected) {
-                              setCreateRoomSelectedFriends(prev =>
-                                prev.filter(id => id !== f.following_id)
-                              );
-                            } else {
-                              setCreateRoomSelectedFriends(prev => [...prev, f.following_id]);
-                            }
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderWidth: 2,
-                              borderColor: isSelected ? THEME.menuNeeded : THEME.border,
-                              borderRadius: 4,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              marginRight: 12,
-                            }}
-                          >
-                            {isSelected && <Check size={16} color={THEME.menuNeeded} />}
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '600', color: THEME.text }}>
-                              {profile.name}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                )}
-              </View>
-            )}
-
-            {/* Action Buttons */}
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  backgroundColor: THEME.border,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                }}
-                onPress={() => {
-                  if (currentCreateStep === 1) {
                     setShowCreateModal(false);
                     setCurrentCreateStep(1);
                     setNewRoomTitle('');
                     setNewRoomDate('');
                     setCreateRoomSelectedFriends([]);
-                  } else {
-                    setCurrentCreateStep(currentCreateStep - 1);
-                  }
-                }}
-              >
-                <Text style={{ color: THEME.text, fontWeight: 'bold' }}>
-                  {currentCreateStep === 1 ? '취소' : '이전'}
-                </Text>
-              </TouchableOpacity>
+                  }}
+                >
+                  <X size={24} color={THEME.text} />
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  backgroundColor: THEME.menuNeeded,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                }}
-                onPress={() => {
-                  if (currentCreateStep === 3) {
-                    handleCreateRoom();
-                  } else {
-                    setCurrentCreateStep(currentCreateStep + 1);
-                  }
-                }}
-                disabled={loading || (currentCreateStep === 1 && !newRoomTitle.trim())}
-              >
-                <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
-                  {currentCreateStep === 3 ? '만들기' : '다음'}
-                </Text>
-              </TouchableOpacity>
+              {/* Step Progress Indicator */}
+              <View style={{ flexDirection: 'row', marginBottom: 16, marginTop: 16, gap: 2 }}>
+                {[1, 2, 3].map(step => (
+                  <View
+                    key={step}
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      backgroundColor: step <= currentCreateStep ? THEME.menuNeeded : THEME.border,
+                      borderRadius: 3,
+                    }}
+                  />
+                ))}
+              </View>
+              <Text style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 16 }}>
+                Step {currentCreateStep} / 3
+              </Text>
+
+              {/* Step 1: Appointment Name */}
+              {currentCreateStep === 1 && (
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                    약속 이름
+                  </Text>
+                  <TextInput
+                    style={{
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      color: THEME.text,
+                      marginBottom: 16,
+                    }}
+                    placeholder="예) 회사 팀 점심"
+                    placeholderTextColor={THEME.textMuted}
+                    value={newRoomTitle}
+                    onChangeText={setNewRoomTitle}
+                  />
+                </View>
+              )}
+
+              {/* Step 2: Date Selection */}
+              {currentCreateStep === 2 && (
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                    약속 날짜
+                  </Text>
+                  <TouchableOpacity
+                    style={{
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      marginBottom: 16,
+                    }}
+                    onPress={() => {
+                      // Simple date input - using native date picker would be ideal
+                      // For now, we'll use text input for date selection (YYYY-MM-DD format)
+                      // You can integrate a date picker library here if needed
+                    }}
+                  >
+                    <Text style={{ color: newRoomDate ? THEME.text : THEME.textMuted, fontSize: 14 }}>
+                      {newRoomDate || '날짜를 선택해주세요'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TextInput
+                    style={{
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 14,
+                      color: THEME.text,
+                      marginBottom: 16,
+                    }}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={THEME.textMuted}
+                    value={newRoomDate}
+                    onChangeText={setNewRoomDate}
+                  />
+                </View>
+              )}
+
+              {/* Step 3: Invite Friends */}
+              {currentCreateStep === 3 && (
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
+                    친구 초대하기 (선택)
+                  </Text>
+                  {myFollows.length === 0 ? (
+                    <Text style={{ fontSize: 12, color: THEME.textMuted, marginVertical: 4 }}>
+                      등록된 친구가 없습니다.
+                    </Text>
+                  ) : (
+                    <ScrollView
+                      style={{
+                        maxHeight: 300,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: THEME.border,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        backgroundColor: THEME.background,
+                      }}
+                      nestedScrollEnabled={true}
+                    >
+                      {myFollows.map(f => {
+                        const profile = f.profiles;
+                        if (!profile) return null;
+                        const isSelected = createRoomSelectedFriends.includes(f.following_id);
+                        return (
+                          <TouchableOpacity
+                            key={f.id}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingVertical: 8,
+                              borderBottomWidth: 1,
+                              borderBottomColor: THEME.border,
+                            }}
+                            onPress={() => {
+                              if (isSelected) {
+                                setCreateRoomSelectedFriends(prev =>
+                                  prev.filter(id => id !== f.following_id)
+                                );
+                              } else {
+                                setCreateRoomSelectedFriends(prev => [...prev, f.following_id]);
+                              }
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderWidth: 2,
+                                borderColor: isSelected ? THEME.menuNeeded : THEME.border,
+                                borderRadius: 4,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: 12,
+                              }}
+                            >
+                              {isSelected && <Check size={16} color={THEME.menuNeeded} />}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: '600', color: THEME.text }}>
+                                {profile.name}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
+
+              {/* Action Buttons */}
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    backgroundColor: THEME.border,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                  onPress={() => {
+                    if (currentCreateStep === 1) {
+                      setShowCreateModal(false);
+                      setCurrentCreateStep(1);
+                      setNewRoomTitle('');
+                      setNewRoomDate('');
+                      setCreateRoomSelectedFriends([]);
+                    } else {
+                      setCurrentCreateStep(currentCreateStep - 1);
+                    }
+                  }}
+                >
+                  <Text style={{ color: THEME.text, fontWeight: 'bold' }}>
+                    {currentCreateStep === 1 ? '취소' : '이전'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    backgroundColor: THEME.menuNeeded,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                  onPress={() => {
+                    if (currentCreateStep === 3) {
+                      handleCreateRoom();
+                    } else {
+                      setCurrentCreateStep(currentCreateStep + 1);
+                    }
+                  }}
+                  disabled={loading || (currentCreateStep === 1 && !newRoomTitle.trim())}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                    {currentCreateStep === 3 ? '만들기' : '다음'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
         {/* AI Recommendations Modal */}
         <Modal
@@ -5063,7 +5063,7 @@ ${inviteLink}
                           <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text }}>
                             {rec.recommended_place.type === '술집' ? '🍺 ' : '☕ '}{rec.recommended_place.name}
                           </Text>
-                          
+
                           {/* Category and business hours */}
                           <Text style={{ fontSize: 12, color: THEME.textMuted }}>
                             {rec.recommended_place.type} · 영업시간: {rec.recommended_place.business_hours}
@@ -5080,7 +5080,7 @@ ${inviteLink}
                               💵 <Text style={{ fontWeight: '600' }}>평균 가격대:</Text> {rec.recommended_place.price}
                             </Text>
                           )}
-                          
+
                           {/* Slogan & AI Summary badge */}
                           <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                             <Text style={{ fontSize: 13, color: THEME.text, fontWeight: '600' }}>
@@ -5210,8 +5210,8 @@ ${inviteLink}
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
-    );
-  }
+  );
+}
 
 const styles = StyleSheet.create({
   appContainer: {

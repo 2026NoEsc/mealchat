@@ -152,10 +152,10 @@ function calculateAverageTravelTime(
 function extractJsonString(text: string): string | null {
   const startArray = text.indexOf('[');
   const startObject = text.indexOf('{');
-  
+
   let startIdx = -1;
   let endIdx = -1;
-  
+
   if (startArray !== -1 && startObject !== -1) {
     startIdx = Math.min(startArray, startObject);
   } else if (startArray !== -1) {
@@ -163,17 +163,17 @@ function extractJsonString(text: string): string | null {
   } else if (startObject !== -1) {
     startIdx = startObject;
   }
-  
+
   if (startIdx === -1) return null;
-  
+
   if (startIdx === startArray) {
     endIdx = text.lastIndexOf(']');
   } else {
     endIdx = text.lastIndexOf('}');
   }
-  
+
   if (endIdx === -1 || endIdx < startIdx) return null;
-  
+
   return text.substring(startIdx, endIdx + 1);
 }
 
@@ -187,7 +187,7 @@ function getFallbackPlaceRecommendation(
   type: '카페' | '술집'
 ): PlaceRecommendation {
   const normalized = locationName || '강남역';
-  
+
   const cafeList: Record<string, { name: string; reason: string; business_hours: string }> = {
     '강남역': {
       name: '알베르 (Alver)',
@@ -244,7 +244,7 @@ function getFallbackPlaceRecommendation(
     }
   };
 
-  const matchedKey = Object.keys(type === '카페' ? cafeList : barList).find(key => 
+  const matchedKey = Object.keys(type === '카페' ? cafeList : barList).find(key =>
     normalized.includes(key)
   );
 

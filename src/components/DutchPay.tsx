@@ -115,10 +115,10 @@ const getMemberCleanName = (rawName: string) => {
 function extractJsonString(text: string): string | null {
   const startArray = text.indexOf('[');
   const startObject = text.indexOf('{');
-  
+
   let startIdx = -1;
   let endIdx = -1;
-  
+
   if (startArray !== -1 && startObject !== -1) {
     startIdx = Math.min(startArray, startObject);
   } else if (startArray !== -1) {
@@ -126,17 +126,17 @@ function extractJsonString(text: string): string | null {
   } else if (startObject !== -1) {
     startIdx = startObject;
   }
-  
+
   if (startIdx === -1) return null;
-  
+
   if (startIdx === startArray) {
     endIdx = text.lastIndexOf(']');
   } else {
     endIdx = text.lastIndexOf('}');
   }
-  
+
   if (endIdx === -1 || endIdx < startIdx) return null;
-  
+
   return text.substring(startIdx, endIdx + 1);
 }
 
@@ -1237,168 +1237,168 @@ ${participants.map(p => `- 이름: ${p.name}, ID: ${p.profile_id || p.id}`).join
               return showNeededOnly ? hasUncompletedMembers : !hasUncompletedMembers;
             })
             .map(bill => {
-            const amountPerPerson = Math.round(bill.total_amount / bill.split_count);
-            const isSelected = selectedBill?.id === bill.id;
-            const hasUncompletedMembers = bill.dutch_pay_members?.some(m => !m.is_completed) || false;
+              const amountPerPerson = Math.round(bill.total_amount / bill.split_count);
+              const isSelected = selectedBill?.id === bill.id;
+              const hasUncompletedMembers = bill.dutch_pay_members?.some(m => !m.is_completed) || false;
 
-            return (
-              <View key={bill.id} style={[
-                styles.billCard,
-                {
-                  backgroundColor: hasUncompletedMembers ? THEME.menuNeeded : THEME.menuComplete,
-                  opacity: hasUncompletedMembers ? 1 : 0.6,
-                }
-              ]}>
-                <TouchableOpacity
-                  style={styles.billCardHeader}
-                  onPress={() => setSelectedBill(isSelected ? null : bill)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.billTitle, { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }]}>
-                      {bill.title}
-                    </Text>
-                    <Text style={[styles.billMeta, { color: '#FFFFFF' + 'cc', fontSize: 12, marginTop: 4 }]}>
-                      {new Date(bill.created_at).toLocaleDateString('ko-KR')}
+              return (
+                <View key={bill.id} style={[
+                  styles.billCard,
+                  {
+                    backgroundColor: hasUncompletedMembers ? THEME.menuNeeded : THEME.menuComplete,
+                    opacity: hasUncompletedMembers ? 1 : 0.6,
+                  }
+                ]}>
+                  <TouchableOpacity
+                    style={styles.billCardHeader}
+                    onPress={() => setSelectedBill(isSelected ? null : bill)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.billTitle, { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }]}>
+                        {bill.title}
+                      </Text>
+                      <Text style={[styles.billMeta, { color: '#FFFFFF' + 'cc', fontSize: 12, marginTop: 4 }]}>
+                        {new Date(bill.created_at).toLocaleDateString('ko-KR')}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={[styles.billSplitAmount, { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }]}>
+                        ¥{bill.total_amount.toLocaleString()}
+                      </Text>
+                      <Text style={[styles.billSplitSub, { color: '#FFFFFF' + 'cc', fontSize: 12 }]}>
+                        {bill.split_count}명 N빵
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Status Badge */}
+                  <View style={[styles.statusBadgeContainer, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#FFFFFF' + '33' }]}>
+                    <Text style={styles.statusBadgeText}>
+                      {hasUncompletedMembers ? '정산 필요' : '✓ 정산 완료'}
                     </Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[styles.billSplitAmount, { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }]}>
-                      ¥{bill.total_amount.toLocaleString()}
-                    </Text>
-                    <Text style={[styles.billSplitSub, { color: '#FFFFFF' + 'cc', fontSize: 12 }]}>
-                      {bill.split_count}명 N빵
-                    </Text>
-                  </View>
-                </TouchableOpacity>
 
-                {/* Status Badge */}
-                <View style={[styles.statusBadgeContainer, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#FFFFFF' + '33' }]}>
-                  <Text style={styles.statusBadgeText}>
-                    {hasUncompletedMembers ? '정산 필요' : '✓ 정산 완료'}
-                  </Text>
-                </View>
-
-                {/* Expanded QR & Deep links details */}
-                {isSelected && (
-                  <View style={styles.expandedDetails}>
-                    {/* If Creator: Management Panel */}
-                    {globalProfile && bill.creator_id === globalProfile.id ? (
-                      <View style={styles.managementSection}>
-                        <Text style={styles.sectionSubHeading}>👥 구성원 입금 현황 관리</Text>
-                        {bill.dutch_pay_members && bill.dutch_pay_members.length > 0 ? (
-                          <View style={styles.memberList}>
-                            {bill.dutch_pay_members.map(member => (
-                              <View key={member.id} style={styles.memberRow}>
-                                <Text style={styles.memberName}>
-                                  {getMemberCleanName(member.name)} ({getMemberAmount(bill, member).toLocaleString()}원)
-                                </Text>
-                                <View style={styles.memberStatusRow}>
-                                  {member.is_completed ? (
-                                    <View style={styles.completedBadge}>
-                                      <Check size={12} color="#10b981" />
-                                      <Text style={styles.completedBadgeText}>입금 확인됨</Text>
-                                    </View>
-                                  ) : (
-                                    <View style={styles.pendingBadgeRow}>
-                                      <Text style={styles.pendingText}>미입금</Text>
-                                      <TouchableOpacity
-                                        style={styles.confirmDepositBtn}
-                                        onPress={() => handleConfirmDeposit(bill, member)}
-                                      >
-                                        <Text style={styles.confirmDepositBtnText}>확인</Text>
-                                      </TouchableOpacity>
-                                    </View>
-                                  )}
+                  {/* Expanded QR & Deep links details */}
+                  {isSelected && (
+                    <View style={styles.expandedDetails}>
+                      {/* If Creator: Management Panel */}
+                      {globalProfile && bill.creator_id === globalProfile.id ? (
+                        <View style={styles.managementSection}>
+                          <Text style={styles.sectionSubHeading}>👥 구성원 입금 현황 관리</Text>
+                          {bill.dutch_pay_members && bill.dutch_pay_members.length > 0 ? (
+                            <View style={styles.memberList}>
+                              {bill.dutch_pay_members.map(member => (
+                                <View key={member.id} style={styles.memberRow}>
+                                  <Text style={styles.memberName}>
+                                    {getMemberCleanName(member.name)} ({getMemberAmount(bill, member).toLocaleString()}원)
+                                  </Text>
+                                  <View style={styles.memberStatusRow}>
+                                    {member.is_completed ? (
+                                      <View style={styles.completedBadge}>
+                                        <Check size={12} color="#10b981" />
+                                        <Text style={styles.completedBadgeText}>입금 확인됨</Text>
+                                      </View>
+                                    ) : (
+                                      <View style={styles.pendingBadgeRow}>
+                                        <Text style={styles.pendingText}>미입금</Text>
+                                        <TouchableOpacity
+                                          style={styles.confirmDepositBtn}
+                                          onPress={() => handleConfirmDeposit(bill, member)}
+                                        >
+                                          <Text style={styles.confirmDepositBtnText}>확인</Text>
+                                        </TouchableOpacity>
+                                      </View>
+                                    )}
+                                  </View>
                                 </View>
-                              </View>
-                            ))}
+                              ))}
+                            </View>
+                          ) : (
+                            <Text style={styles.noMembersText}>정산 대상 멤버가 없습니다.</Text>
+                          )}
+
+                          {/* Broadcast Nudge Button */}
+                          <TouchableOpacity
+                            style={[styles.actionBtn, styles.sendNotifBtn, { marginTop: 12, width: '100%' }]}
+                            onPress={() => handleSendNotification(bill)}
+                          >
+                            <Bell size={12} color="white" />
+                            <Text style={styles.sendNotifText}>미입금자에게 독촉 알림 전송</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        /* If Debtor: show status and payment options */
+                        <View style={{ width: '100%', alignItems: 'center' }}>
+                          {/* Check if user is a member of this bill */}
+                          {(() => {
+                            const myMember = bill.dutch_pay_members?.find(m => m.profile_id === globalProfile?.id);
+                            if (myMember) {
+                              return myMember.is_completed ? (
+                                <View style={styles.statusBoxSuccess}>
+                                  <CheckCircle size={14} color="#10b981" />
+                                  <Text style={styles.statusBoxTextSuccess}>정산 완료! 예금주가 입금을 확인했습니다.</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.statusBoxPending}>
+                                  <AlertCircle size={14} color="#ef4444" />
+                                  <Text style={styles.statusBoxTextPending}>정산 대기 중 (아래 수단으로 송금해 주세요)</Text>
+                                </View>
+                              );
+                            } else {
+                              return (
+                                <View style={styles.statusBoxInfo}>
+                                  <AlertCircle size={14} color={THEME.primary} />
+                                  <Text style={styles.statusBoxTextInfo}>이 정산의 직접적인 대상자가 아닙니다.</Text>
+                                </View>
+                              );
+                            }
+                          })()}
+
+                          {/* QR Code Container */}
+                          <View style={styles.qrContainer}>
+                            <Image
+                              source={{ uri: getQRImageUrl(bill) }}
+                              style={styles.qrImage}
+                              resizeMode="contain"
+                            />
+                            <Text style={styles.qrText}>상대방의 폰으로 스캔하여 정산</Text>
                           </View>
-                        ) : (
-                          <Text style={styles.noMembersText}>정산 대상 멤버가 없습니다.</Text>
-                        )}
 
-                        {/* Broadcast Nudge Button */}
-                        <TouchableOpacity
-                          style={[styles.actionBtn, styles.sendNotifBtn, { marginTop: 12, width: '100%' }]}
-                          onPress={() => handleSendNotification(bill)}
-                        >
-                          <Bell size={12} color="white" />
-                          <Text style={styles.sendNotifText}>미입금자에게 독촉 알림 전송</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      /* If Debtor: show status and payment options */
-                      <View style={{ width: '100%', alignItems: 'center' }}>
-                        {/* Check if user is a member of this bill */}
-                        {(() => {
-                          const myMember = bill.dutch_pay_members?.find(m => m.profile_id === globalProfile?.id);
-                          if (myMember) {
-                            return myMember.is_completed ? (
-                              <View style={styles.statusBoxSuccess}>
-                                <CheckCircle size={14} color="#10b981" />
-                                <Text style={styles.statusBoxTextSuccess}>정산 완료! 예금주가 입금을 확인했습니다.</Text>
-                              </View>
-                            ) : (
-                              <View style={styles.statusBoxPending}>
-                                <AlertCircle size={14} color="#ef4444" />
-                                <Text style={styles.statusBoxTextPending}>정산 대기 중 (아래 수단으로 송금해 주세요)</Text>
-                              </View>
-                            );
-                          } else {
-                            return (
-                              <View style={styles.statusBoxInfo}>
-                                <AlertCircle size={14} color={THEME.primary} />
-                                <Text style={styles.statusBoxTextInfo}>이 정산의 직접적인 대상자가 아닙니다.</Text>
-                              </View>
-                            );
-                          }
-                        })()}
+                          {/* Account Info Box */}
+                          <View style={styles.accountBox}>
+                            <CreditCard size={14} color="#94a3b8" />
+                            <Text style={styles.accountText}>
+                              {bill.bank_name} : {bill.account_number} ({bill.account_holder})
+                            </Text>
+                          </View>
 
-                        {/* QR Code Container */}
-                        <View style={styles.qrContainer}>
-                          <Image
-                            source={{ uri: getQRImageUrl(bill) }}
-                            style={styles.qrImage}
-                            resizeMode="contain"
-                          />
-                          <Text style={styles.qrText}>상대방의 폰으로 스캔하여 정산</Text>
+                          {/* Button Row */}
+                          <View style={styles.actionBtnRow}>
+                            {/* KakaoPay DeepLink Button */}
+                            <TouchableOpacity
+                              style={[styles.actionBtn, styles.kakaoPayBtn]}
+                              onPress={() => handleKakaoPayTransfer(bill)}
+                            >
+                              <Send size={12} color="black" />
+                              <Text style={styles.kakaoPayText}>카카오페이</Text>
+                            </TouchableOpacity>
+
+                            {/* Toss DeepLink Button */}
+                            <TouchableOpacity
+                              style={[styles.actionBtn, styles.tossBtn]}
+                              onPress={() => handleTossTransfer(bill)}
+                            >
+                              <Send size={12} color="white" />
+                              <Text style={styles.tossText}>토스 송금</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
-
-                        {/* Account Info Box */}
-                        <View style={styles.accountBox}>
-                          <CreditCard size={14} color="#94a3b8" />
-                          <Text style={styles.accountText}>
-                            {bill.bank_name} : {bill.account_number} ({bill.account_holder})
-                          </Text>
-                        </View>
-
-                        {/* Button Row */}
-                        <View style={styles.actionBtnRow}>
-                          {/* KakaoPay DeepLink Button */}
-                          <TouchableOpacity
-                            style={[styles.actionBtn, styles.kakaoPayBtn]}
-                            onPress={() => handleKakaoPayTransfer(bill)}
-                          >
-                            <Send size={12} color="black" />
-                            <Text style={styles.kakaoPayText}>카카오페이</Text>
-                          </TouchableOpacity>
-
-                          {/* Toss DeepLink Button */}
-                          <TouchableOpacity
-                            style={[styles.actionBtn, styles.tossBtn]}
-                            onPress={() => handleTossTransfer(bill)}
-                          >
-                            <Send size={12} color="white" />
-                            <Text style={styles.tossText}>토스 송금</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })}
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
         </View>
       ) : (
         <Text style={styles.noBillsText}>등록된 N빵 정산 요청이 없습니다.</Text>
