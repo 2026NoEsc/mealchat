@@ -34,3 +34,8 @@ dist-ssr
 # Understand anything generated folder
 .understand-anything/
 
+# Temporary and scratch files
+scratch/
+tmp/
+
+
