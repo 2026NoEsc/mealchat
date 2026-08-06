@@ -1,0 +1,64 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# EAS
+.eas/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Understand anything generated folder
+.understand-anything/
+
+
+# Expo CNG(Continuous Native Generation) 산출물
+# app.json/plugins에서 매번 재생성되므로 커밋하지 않습니다.
+/android
+/ios
+
+# Firebase (FCM) 설정 — API 키가 들어 있어 커밋하지 않습니다.
+# Firebase 콘솔 → 프로젝트 설정 → Android 앱(com.mealchat.app)에서 내려받아
+# 프로젝트 루트에 두면 app.config.js 가 자동으로 집어갑니다.
+google-services.json
+GoogleService-Info.plist
+
+# 인수인계용 비밀 모음 — 절대 커밋 금지.
+# 전달 후 즉시 삭제하세요.
+SECRETS-DO-NOT-COMMIT.md
+
+# Supabase CLI 로컬 상태 — DB 커넥션 정보·프로젝트 ref가 들어 있어 커밋하지 않습니다.
+supabase/.temp/
+
+# 대용량 데모 영상 — 커밋 시 저장소 히스토리에 영구히 남으므로 제외합니다.
+docs/REQUIREMENTS/ui_video.mp4
+
+# Expo 로컬 캐시/기기 상태 — 머신마다 달라지는 값이라 커밋하지 않습니다.
+.expo/
+
+# 임시/스크래치 작업 폴더 — 커밋 대상 아님.
+tmp/
+scratch/

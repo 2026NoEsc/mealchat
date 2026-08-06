@@ -1,0 +1,135 @@
+name: EAS Development Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feat/*
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  EAS_BUILD_PROFILE: development
+
+jobs:
+  build-android:
+    name: Build Android Development APK
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Android Development
+        run: eas build --platform android --profile development --wait --non-interactive
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
+          EXPO_PUBLIC_KAKAO_REST_API_KEY: ${{ secrets.EXPO_PUBLIC_KAKAO_REST_API_KEY }}
+
+      - name: Get build artifact
+        id: get_build
+        run: |
+          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with build link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📱 Android Development Build is ready!\n\nCheck the build status: https://expo.dev/builds'
+            })
+
+  build-ios:
+    name: Build iOS Development Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build iOS Development
+        run: eas build --platform ios --profile development --wait --non-interactive
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
+          EXPO_PUBLIC_KAKAO_REST_API_KEY: ${{ secrets.EXPO_PUBLIC_KAKAO_REST_API_KEY }}
+
+      - name: Comment PR with build link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📱 iOS Development Build is ready!\n\nCheck the build status: https://expo.dev/builds'
+            })
+
+  lint:
+    name: TypeScript Check & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: TypeScript Check
+        run: npm run ts:check
+
+      # 기존 부채(console.* / any)는 warn 이라 CI 를 막지 않습니다.
+      # error 로 잡는 것은 실제 버그로 이어지는 유형뿐입니다
+      # (미사용 변수, react-hooks 규칙). eslint.config.js 주석 참고.
+      - name: ESLint
+        run: npm run lint
+
+      # 테스트가 CI 에서 돌지 않으면 없는 것과 같습니다.
+      # 지금은 src/lib 의 순수 함수만 덮습니다 (jest.config.js 참고).
+      - name: Unit Tests
+        run: npm test -- --ci

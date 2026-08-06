@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- 1. Green bubble (top left) -->
+  <circle cx="190" cy="180" r="95" fill="#34A853" />
+  <!-- Green face -->
+  <circle cx="165" cy="140" r="7" fill="#1A1A1A" />
+  <circle cx="205" cy="140" r="7" fill="#1A1A1A" />
+  <!-- Spoon -->
+  <path d="M142 182 C135 182, 131 190, 131 198 C131 206, 136 214, 143 214 C150 214, 154 206, 154 198 C154 190, 150 182, 142 182 Z" fill="#FFFFFF" />
+  <path d="M142.5 212 L149 250" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
+  <!-- Fork -->
+  <path d="M188 200 L188 250" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
+  <path d="M178 180 L178 202 A 10 10 0 0 0 198 202 L198 180" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
+  <path d="M188 180 L188 202" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
+
+  <!-- 2. Blue speech bubble (top right) -->
+  <circle cx="315" cy="185" r="90" fill="#00A3FF" />
+  <path d="M 245 228 L 225 265 L 273 248 Z" fill="#00A3FF" />
+  <!-- Blue face -->
+  <circle cx="295" cy="165" r="7" fill="#1A1A1A" />
+  <path d="M328 158 L340 165 L328 172" fill="none" stroke="#1A1A1A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 298 190 Q 315 218 332 190 Z" fill="#1A1A1A" />
+
+  <!-- 3. Yellow bubble (bottom right) -->
+  <circle cx="320" cy="335" r="85" fill="#FFD600" />
+  <!-- Yellow face -->
+  <circle cx="298" cy="315" r="7" fill="#1A1A1A" />
+  <circle cx="338" cy="315" r="7" fill="#1A1A1A" />
+  <circle cx="318" cy="342" r="10" fill="#1A1A1A" />
+
+  <!-- 4. Orange bubble (bottom left) -->
+  <circle cx="195" cy="325" r="115" fill="#FF7A00" />
+  <!-- Orange face -->
+  <circle cx="165" cy="300" r="8" fill="#1A1A1A" />
+  <circle cx="215" cy="300" r="8" fill="#1A1A1A" />
+  <path d="M 150 338 Q 190 388 230 338" fill="none" stroke="#1A1A1A" stroke-width="8" stroke-linecap="round" />
+</svg>
