@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { THEME } from '../lib/theme';
+import { formatMessagePreview } from '../constants/emoticons';
 import type { Room, RoomMemberSummary } from '../lib/types';
 
 interface RoomCardProps {
@@ -96,6 +97,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 }) => {
   const status = useMemo(() => getRoomStatus(room), [room]);
   const meta = useMemo(() => getRoomMetaLabel(room), [room]);
+  const preview = formatMessagePreview(lastMessage);
   const themeColor = room.color || THEME.primary;
   const hasUnread = unreadCount > 0;
 
@@ -129,9 +131,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           </View>
         </View>
 
-        {Boolean(lastMessage) && (
+        {Boolean(preview) && (
           <Text style={styles.preview} numberOfLines={1}>
-            {lastMessage}
+            {preview}
           </Text>
         )}
 

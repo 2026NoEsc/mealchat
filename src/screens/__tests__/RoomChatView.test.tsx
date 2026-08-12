@@ -64,7 +64,7 @@ const setShowRoomInfoModal = jest.fn();
 const setup = async (over: { messages?: Message[]; isOneDayRoom?: boolean; confirmed?: boolean } = {}) => {
   mockUseAuth.mockReturnValue({ globalProfile: { id: 'me' } });
   mockUseNavigation.mockReturnValue({ setShowRoomInfoModal });
-  mockUseRoomTimer.mockReturnValue({ timeLeft: '11:47:22' });
+  mockUseRoomTimer.mockReturnValue({ timeLeft: '23시간 57분 54초 남음' });
   mockUseRoom.mockReturnValue({
     currentRoom: {
       id: 'r1',
@@ -93,7 +93,7 @@ describe('RoomChatView', () => {
   it('헤더 / 확정 배너 / 메시지를 그린다', async () => {
     const { findByText } = await setup();
     expect(await findByText('오늘 점심팟')).toBeTruthy();
-    expect(await findByText('11:47:22 후 방이 사라져요.')).toBeTruthy();
+    expect(await findByText('23시간 57분 54초 후 방이 사라져요.')).toBeTruthy();
     expect(await findByText('8월 15일 (금) 18:30  ·  조선칼국수 하단점')).toBeTruthy();
     expect(await findByText('다들 수요일 점심 괜찮아요?')).toBeTruthy();
   });

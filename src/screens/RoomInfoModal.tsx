@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Check, Lock } from 'lucide-react-native';
 import { Button } from '../components/Button';
 import { THEME, PALETTE_COLORS } from '../lib/theme';
-import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from '../lib/roomUtils';
+import { resolveRoomOwnerProfileId, getMeetingDateDisplay, formatRoomExpiry } from '../lib/roomUtils';
 import { useAuth, useRoom, useNavigation, useRoomEditing, useRoomTimer } from '../contexts';
 import type { Participant } from '../lib/types';
 
@@ -108,7 +108,7 @@ const RoomInfoModal: React.FC<RoomInfoModalProps> = ({
                 </View>
                 <View style={styles.headerTimerRow}>
                   <Lock size={9} color={THEME.danger} />
-                  <Text style={styles.headerTimerText}>{timeLeft} 후 방이 사라져요.</Text>
+                  <Text style={styles.headerTimerText}>{formatRoomExpiry(timeLeft)}</Text>
                 </View>
               </View>
             </View>

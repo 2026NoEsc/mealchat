@@ -51,3 +51,14 @@ export const parseEmoticonKey = (message: string): string | null => {
   const key = message.slice('[emoticon:'.length, -1);
   return EMOTICONS_MAP[key] ? key : null;
 };
+
+/**
+ * 방 목록 카드의 마지막 대화 미리보기.
+ * 이모티콘 메시지는 `[emoticon:key]` 로 저장되므로 그대로 보여주면 원문이 샌다.
+ */
+export const formatMessagePreview = (message?: string): string => {
+  if (!message) return '';
+  const key = parseEmoticonKey(message);
+  if (!key) return message;
+  return `${EMOTICON_NAMES[key] ?? '캐릭터'} 이모티콘`;
+};

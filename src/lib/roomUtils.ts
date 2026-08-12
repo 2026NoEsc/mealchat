@@ -63,3 +63,17 @@ export function getMeetingDateDisplay(room: Room): string {
   }
   return room.meeting_date;
 }
+
+/**
+ * 만료 카운트다운을 Figma `roomHeader` 의 문장으로 다듬는다.
+ *
+ * `timeLeft` 는 "23시간 57분 54초 남음" 처럼 이미 "남음" 을 달고 오고,
+ * "폭파됨 💥" 같은 종료 상태도 들어온다. 그대로 "… 후 방이 사라져요" 를
+ * 붙이면 "남음 후 방이 사라져요" 가 되어 읽히지 않는다.
+ */
+export const formatRoomExpiry = (timeLeft: string): string => {
+  const trimmed = (timeLeft || '').trim();
+  if (!trimmed) return '';
+  if (!/남음$/.test(trimmed)) return trimmed; // 폭파됨 등 종료 상태는 그대로
+  return `${trimmed.replace(/\s*남음$/, '')} 후 방이 사라져요.`;
+};

@@ -101,7 +101,7 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
   };
 
   return (
-    <View style={{ flexShrink: 1 }}>
+    <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}>
         {/* 현황 표시 */}
         {(() => {

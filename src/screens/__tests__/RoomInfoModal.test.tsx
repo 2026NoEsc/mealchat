@@ -69,7 +69,7 @@ const setup = async (over: { viewerId?: string; participants?: any[] } = {}) => 
     participantsLoading: false,
   });
   mockUseNavigation.mockReturnValue({ showRoomInfoModal: true, setShowRoomInfoModal: jest.fn() });
-  mockUseRoomTimer.mockReturnValue({ timeLeft: '11:47:22' });
+  mockUseRoomTimer.mockReturnValue({ timeLeft: '23시간 57분 54초 남음' });
   mockUseRoomEditing.mockReturnValue({
     isEditingRoomTitle: false,
     editingRoomTitle: '오늘 점심팟',
@@ -98,7 +98,7 @@ describe('RoomInfoModal', () => {
     expect(await findByText('VF4HLD')).toBeTruthy();
     expect(await findByText('조선칼국수 하단점')).toBeTruthy();
     expect(await findByText('멤버 2명')).toBeTruthy();
-    expect(await findByText('11:47:22 후 방이 사라져요.')).toBeTruthy();
+    expect(await findByText('23시간 57분 54초 후 방이 사라져요.')).toBeTruthy();
   });
 
   it('방장과 메이트를 구분해 표시한다', async () => {

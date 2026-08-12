@@ -45,7 +45,16 @@ export const RoomPanelSheet: React.FC<RoomPanelSheetProps> = ({
       <View style={styles.dim} />
     </TouchableWithoutFeedback>
 
-    <View style={[styles.sheet, expanded && styles.sheetExpanded]}>
+    <View
+      style={[
+        styles.sheet,
+        // 자식이 자기 ScrollView 를 들고 오면(scrollable=false) 시트 높이를
+        // 못 박아 준다. 안 그러면 부모도 자식도 높이가 확정되지 않아 내용이
+        // 0 으로 접힌다 — Figma 의 패널도 높이가 고정(286/486 ≈ 60%)이다.
+        !scrollable && !expanded && styles.sheetFixed,
+        expanded && styles.sheetExpanded,
+      ]}
+    >
       <TouchableOpacity
         style={styles.handleTapTarget}
         onPress={onClose}
@@ -131,12 +140,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 8,
   },
+  sheetFixed: {
+    height: '62%',
+  },
   sheetExpanded: {
     flex: 1,
     maxHeight: '100%',
   },
   plainContent: {
-    flexShrink: 1,
+    flex: 1,
     marginTop: 12,
   },
   plainContentExpanded: {

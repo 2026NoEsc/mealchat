@@ -123,6 +123,20 @@ describe('RoomCard', () => {
     expect(await findByText('+1 · 장소 미정')).toBeTruthy();
   });
 
+  it('이모티콘 메시지는 원문 대신 이름으로 보여준다', async () => {
+    // 에뮬레이터에서 카드에 '[emoticon:welling_thumbs]' 가 그대로 새어 나왔다
+    const { findByText, queryByText } = await render(
+      <RoomCard
+        room={makeRoom()}
+        unreadCount={0}
+        lastMessage="[emoticon:welling_thumbs]"
+        onPress={() => {}}
+      />
+    );
+    expect(await findByText('최고웰링 이모티콘')).toBeTruthy();
+    expect(queryByText('[emoticon:welling_thumbs]')).toBeNull();
+  });
+
   it('카드를 누르면 onPress 가 불린다', async () => {
     const onPress = jest.fn();
     const { findByText } = await render(<RoomCard room={makeRoom()} unreadCount={0} onPress={onPress} />);

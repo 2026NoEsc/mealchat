@@ -1,4 +1,4 @@
-import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from '../roomUtils';
+import { resolveRoomOwnerProfileId, getMeetingDateDisplay, formatRoomExpiry } from '../roomUtils';
 import type { Participant, Room } from '../types';
 
 /** 테스트에 필요한 필드만 채운 참여자 */
@@ -108,5 +108,20 @@ describe('getMeetingDateDisplay', () => {
   it('잘못된 날짜여도 예외를 던지지 않는다', () => {
     // 화면 표시용 함수가 던지면 방 목록 전체가 안 그려진다.
     expect(() => getMeetingDateDisplay(room('not-a-date', 'also-bad'))).not.toThrow();
+  });
+});
+
+describe('formatRoomExpiry', () => {
+  it('"남음" 을 겹쳐 쓰지 않는다', () => {
+    // 전에는 "23시간 57분 54초 남음 후 방이 사라져요." 로 나왔다
+    expect(formatRoomExpiry('23시간 57분 54초 남음')).toBe('23시간 57분 54초 후 방이 사라져요.');
+  });
+
+  it('종료 상태는 그대로 둔다', () => {
+    expect(formatRoomExpiry('폭파됨 💥')).toBe('폭파됨 💥');
+  });
+
+  it('빈 값이면 빈 문자열', () => {
+    expect(formatRoomExpiry('')).toBe('');
   });
 });

@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { ChevronLeft, Lock, Smile, Send, CalendarDays, Utensils, Wallet, Users, MoreVertical } from 'lucide-react-native';
 import { THEME } from '../lib/theme';
+import { formatRoomExpiry } from '../lib/roomUtils';
 import { EMOTICONS_MAP, EMOTICON_NAMES, parseEmoticonKey } from '../constants/emoticons';
 import { useAuth, useNavigation, useRoom, useRoomTimer } from '../contexts';
 import type { Message } from '../lib/types';
@@ -105,7 +106,7 @@ const RoomChatView: React.FC<RoomChatViewProps> = ({
           </View>
           <View style={styles.headerTimerRow}>
             <Lock size={9} color={THEME.danger} />
-            <Text style={styles.headerTimerText}>{timeLeft} 후 방이 사라져요.</Text>
+            <Text style={styles.headerTimerText}>{formatRoomExpiry(timeLeft)}</Text>
           </View>
         </TouchableOpacity>
         <TouchableOpacity onPress={openRoomInfo} accessibilityLabel="방 상세정보">
