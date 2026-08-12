@@ -34,9 +34,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 44,
+    height: 52,
     paddingHorizontal: 16,
     backgroundColor: THEME.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   brand: {
     flexDirection: 'row',
@@ -44,9 +49,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   wordmark: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: THEME.primary,
+    letterSpacing: 0.5,
   },
   bellButton: {
     width: 32,

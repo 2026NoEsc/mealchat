@@ -29,7 +29,7 @@ import RoomDutchPaySheet from './screens/RoomDutchPaySheet';
 import { RoomPanelSheet } from './components/RoomPanelSheet';
 import { HomeTab } from './screens/HomeTab';
 import { BottomNav } from './components/BottomNav';
-import { MealChatLogo } from './components/MealChatLogo';
+import { AppHeader } from './components/AppHeader';
 import { calculateAIRecommendations } from './lib/aiRecommender';
 import { AuthScreen } from './components/AuthScreen';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -38,7 +38,7 @@ import { THEME } from './lib/theme';
 import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from './lib/roomUtils';
 import { sendScheduleConfirmedNotification, sendRoomParticipationNotification, sendMessageNotification, setupNotificationListeners, sendUnpaidBillNotification, sendRoomCreatedNotification, sendUserJoinedNotification, scheduleConfirmedReminderNotification, cancelNotificationsByType } from './lib/notificationUtils';
 import type { NotificationTarget } from './lib/notificationUtils';
-import { Bell, ExternalLink, X, Settings } from 'lucide-react-native';
+import { ExternalLink, X } from 'lucide-react-native';
 import {
   AuthProvider,
   NetworkProvider,
@@ -3245,43 +3245,22 @@ ${inviteLink}
       >
 
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.logoRow} onPress={handleExitRoom}>
-          <MealChatLogo size={24} />
-          <Text style={styles.logoText}>밀챗</Text>
-        </TouchableOpacity>
-
-        <View style={styles.headerControls}>
-          {/* 새 약속 만들기는 Figma `채팅방/홈` 처럼 방 목록 카드의 + 버튼으로 옮겼다 */}
-
-          {/* Alarm Bell */}
-          <TouchableOpacity
-            style={[styles.bellBtn, showNotifications && styles.bellBtnActive]}
-            onPress={() => {
-              if (isProfileIncomplete) {
-                Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
-                return;
-              }
-              setShowNotifications(!showNotifications);
-              setShowNotificationsRedDot(false);
-            }}
-          >
-            <Bell size={16} color={showNotifications ? '#ef4444' : '#94a3b8'} />
-            {showNotificationsRedDot && <View style={styles.redDot} />}
-          </TouchableOpacity>
-
-          {/* Settings Button */}
-          <TouchableOpacity
-            style={styles.settingsHeaderBtn}
-            onPress={() => {
-              setShowSettingsModal(true);
-            }}
-          >
-            <Settings size={16} color="#94a3b8" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* 헤더 — Figma Design System 의 AppHeader.
+          방 안에서는 그리지 않는다. Figma 는 같은 자리(y=30)에서 AppHeader 와
+          방 전용 roomHeader 가 서로를 대체한다. */}
+      {!currentRoom && (
+        <AppHeader
+          hasUnreadNotifications={showNotificationsRedDot}
+          onBellPress={() => {
+            if (isProfileIncomplete) {
+              Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
+              return;
+            }
+            setShowNotifications(!showNotifications);
+            setShowNotificationsRedDot(false);
+          }}
+        />
+      )}
 
       {/* 알림 패널 — Figma `홈/알림`(node 549:3408).
           Figma 도 전용 화면이 아니라 Dim 위에 뜨는 패널이라 드로어를 유지했다.
@@ -3528,21 +3507,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.background
   },
-  header: {
-    height: 56,
-    backgroundColor: THEME.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
   logoIcon: {
     width: 28,
     height: 28,
@@ -3550,50 +3514,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center'
-  },
-  logoText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: THEME.text,
-    letterSpacing: -0.5
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  bellBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.avatarBg,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative'
-  },
-  bellBtnActive: {
-    backgroundColor: 'rgba(211, 47, 47, 0.15)'
-  },
-  settingsHeaderBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.avatarBg,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  redDot: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: THEME.danger
   },
   notifDim: {
     position: 'absolute',
