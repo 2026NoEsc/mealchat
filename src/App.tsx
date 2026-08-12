@@ -25,12 +25,12 @@ import RoomScheduleSheet from './screens/RoomScheduleSheet';
 import RoomMenuTab from './screens/RoomMenuTab';
 import RoomChatView from './screens/RoomChatView';
 import RoomMemberSheet from './screens/RoomMemberSheet';
+import RoomDutchPaySheet from './screens/RoomDutchPaySheet';
 import { RoomPanelSheet } from './components/RoomPanelSheet';
 import { HomeTab } from './screens/HomeTab';
 import { BottomNav } from './components/BottomNav';
 import { MealChatLogo } from './components/MealChatLogo';
 import { calculateAIRecommendations } from './lib/aiRecommender';
-import { DutchPay } from './components/DutchPay';
 import { AuthScreen } from './components/AuthScreen';
 import { LoadingScreen } from './components/LoadingScreen';
 import { storage } from './lib/storage';
@@ -288,10 +288,6 @@ function AppContent() {
     onSwipeBack: () => setShowGlobalDutchPay(false)
   });
 
-  const roomDutchPayPanResponder = usePanResponderSwipeBack({
-    onSwipeBack: () => setRoomOverlay(null)
-  });
-  
   // Room sub-navigation inside active room details
 
   // Room / Participant states
@@ -3408,20 +3404,14 @@ ${inviteLink}
                 )}
 
                 {roomOverlay === 'dutch' && (
-                  <RoomPanelSheet
-                    title="N빵 정산"
-                    subtitle="결제 금액을 입력하면 자동으로 나눠요"
+                  <RoomDutchPaySheet
+                    roomId={currentRoom.id}
+                    roomTitle={currentRoom.title}
+                    participants={participants}
+                    currentParticipant={currentParticipant}
+                    globalProfile={globalProfile}
                     onClose={() => setRoomOverlay(null)}
-                    scrollable={false}
-                  >
-                    <DutchPay
-                      roomId={currentRoom.id}
-                      roomTitle={currentRoom.title}
-                      currentParticipant={currentParticipant}
-                      participants={participants}
-                      globalProfile={globalProfile}
-                    />
-                  </RoomPanelSheet>
+                  />
                 )}
               </View>
             ) : (
