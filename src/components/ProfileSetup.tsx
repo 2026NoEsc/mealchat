@@ -2074,6 +2074,10 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 <Text style={styles.settingsBackButtonText}>◀ 뒤로 가기</Text>
               </TouchableOpacity>
 
+              {/* Figma `프로필/프로필 수정`(309:1086) — 폼 전체가 카드 한 장 안에 들어간다 */}
+              <View style={styles.editCard}>
+              <Text style={styles.editCardTitle}>프로필 수정</Text>
+
               {/* Profile Picture */}
               <View style={styles.avatarContainer}>
                 <TouchableOpacity 
@@ -2412,6 +2416,8 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                   <Text style={{ fontSize: 11, color: THEME.textMuted }}>위도: {startLatitude.toFixed(4)}</Text>
                   <Text style={{ fontSize: 11, color: THEME.textMuted }}>경도: {startLongitude.toFixed(4)}</Text>
                 </View>
+              </View>
+
               </View>
 
               {/* Save Profile Button */}
@@ -2815,6 +2821,26 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
 });
 
 const styles = StyleSheet.create({
+  // ── Figma `프로필/프로필 수정`(309:1086) ──
+  editCard: {
+    backgroundColor: THEME.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 16,
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  editCardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: THEME.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
   // ── Figma `프로필/정보 공개 범위`(256:2494) ──
   privacyBody: {
     gap: 8,
@@ -3145,33 +3171,39 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.textMuted,
+    color: THEME.labelMuted,
     marginBottom: 6
   },
   textInput: {
-    backgroundColor: THEME.input,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    backgroundColor: THEME.card,
     borderRadius: 8,
     color: THEME.text,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14
+    paddingVertical: 11,
+    fontSize: 14,
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 1
   },
   row: {
     flexDirection: 'row',
     marginBottom: 14
   },
   dropdownButton: {
-    backgroundColor: THEME.input,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    backgroundColor: THEME.card,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    justifyContent: 'center'
+    paddingVertical: 13,
+    justifyContent: 'center',
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 1
   },
   dropdownText: {
     color: THEME.text,
