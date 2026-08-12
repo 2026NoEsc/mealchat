@@ -243,14 +243,22 @@ const RoomChatView: React.FC<RoomChatViewProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* 이모티콘 패널 — Figma 555:416 */}
       {showEmoticonPicker && (
         <View style={styles.emoticonPicker}>
-          <Text style={styles.emoticonPickerTitle}>밀챗 캐릭터 이모티콘</Text>
+          <View style={styles.emoticonHeader}>
+            <Text style={styles.emoticonPickerTitle}>이모티콘</Text>
+            <Text style={styles.emoticonCount}>{Object.keys(EMOTICONS_MAP).length}개</Text>
+          </View>
           <ScrollView contentContainerStyle={styles.emoticonGrid}>
             {Object.keys(EMOTICONS_MAP).map(key => (
-              <TouchableOpacity key={key} style={styles.emoticonItem} onPress={() => onSendEmoticon(key)}>
+              <TouchableOpacity
+                key={key}
+                style={styles.emoticonItem}
+                accessibilityLabel={EMOTICON_NAMES[key]}
+                onPress={() => onSendEmoticon(key)}
+              >
                 <Image source={EMOTICONS_MAP[key]} style={styles.emoticonImage} />
-                <Text style={styles.emoticonName}>{EMOTICON_NAMES[key]}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -537,36 +545,48 @@ const styles = StyleSheet.create({
   },
   emoticonPicker: {
     maxHeight: 260,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    backgroundColor: THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: THEME.card,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  emoticonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
   },
   emoticonPickerTitle: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.textSecondary,
-    paddingVertical: 8,
+    color: THEME.text,
+  },
+  emoticonCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.accentSoft,
   },
   emoticonGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   emoticonItem: {
-    width: 64,
+    width: '22.6%',
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: THEME.surface,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emoticonImage: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     resizeMode: 'contain',
-  },
-  emoticonName: {
-    fontSize: 9,
-    color: THEME.textMuted,
-    marginTop: 2,
   },
 });
 

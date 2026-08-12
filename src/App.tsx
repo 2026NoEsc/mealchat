@@ -3283,38 +3283,54 @@ ${inviteLink}
         </View>
       </View>
 
-      {/* Notifications Drawer Overlay */}
+      {/* 알림 패널 — Figma `홈/알림`(node 549:3408).
+          Figma 도 전용 화면이 아니라 Dim 위에 뜨는 패널이라 드로어를 유지했다.
+          Figma 의 필터 칩(전체/일정/정산/메이트)과 행별 읽음 표시는 넣지 않았다 —
+          알림에 분류도, 개별 읽음 상태도 없다(‌`showNotificationsRedDot` 하나뿐). */}
       {showNotifications && (
-        <View style={styles.notificationsDrawer}>
-          <View style={styles.notifHeader}>
-            <Text style={styles.notifTitle}>정산 알림 목록 🔔</Text>
-            <TouchableOpacity onPress={() => setShowNotifications(false)}>
-              <Text style={styles.notifClose}>닫기</Text>
-            </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.notifDim}
+            activeOpacity={1}
+            onPress={() => setShowNotifications(false)}
+          />
+          <View style={styles.notificationsDrawer}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>알림</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowNotificationsRedDot(false);
+                  setShowNotifications(false);
+                }}
+              >
+                <Text style={styles.notifClose}>모두 읽음</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.notifScroll} contentContainerStyle={{ gap: 8 }}>
+              {appNotifications.length > 0 ? (
+                appNotifications.map(notif => (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={styles.notifCard}
+                    onPress={() => handleNotifClick(notif)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notifItemTitle} numberOfLines={1}>{notif.title}</Text>
+                      <Text style={styles.notifItemDesc} numberOfLines={2}>{notif.message}</Text>
+                    </View>
+                    <View style={styles.payLinkBadge}>
+                      <ExternalLink size={11} color={THEME.accentSoft} />
+                      <Text style={styles.payLinkText}>송금</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noNotifsText}>도착한 알림이 없습니다.</Text>
+              )}
+            </ScrollView>
+            <Text style={styles.notifFooter}>최근 30일의 알림을 보여드려요</Text>
           </View>
-          <ScrollView style={styles.notifScroll}>
-            {appNotifications.length > 0 ? (
-              appNotifications.map(notif => (
-                <TouchableOpacity
-                  key={notif.id}
-                  style={styles.notifCard}
-                  onPress={() => handleNotifClick(notif)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notifItemTitle}>{notif.title}</Text>
-                    <Text style={styles.notifItemDesc}>{notif.message}</Text>
-                  </View>
-                  <View style={styles.payLinkBadge}>
-                    <ExternalLink size={12} color="black" />
-                    <Text style={styles.payLinkText}>송금</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noNotifsText}>도착한 정산 알림이 없습니다.</Text>
-            )}
-          </ScrollView>
-        </View>
+        </>
       )}
 
       {/* Main Content Area */}
@@ -3579,6 +3595,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: THEME.danger
   },
+  notifDim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 190,
+    backgroundColor: THEME.modalOverlay
+  },
   notificationsDrawer: {
     position: 'absolute',
     top: 56,
@@ -3586,76 +3611,82 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 200,
     backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 10,
-    padding: 12,
-    maxHeight: 250,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
+    maxHeight: 420,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10
+    shadowRadius: 10,
+    elevation: 8
   },
   notifHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    paddingBottom: 6,
-    marginBottom: 8
+    marginBottom: 10
   },
   notifTitle: {
     color: THEME.text,
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold'
   },
   notifClose: {
-    color: THEME.textMuted,
-    fontSize: 11
+    color: THEME.accentSoft,
+    fontSize: 11,
+    fontWeight: '600'
   },
   notifScroll: {
-    flex: 1
+    flexGrow: 0
   },
   notifCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    gap: 10,
+    backgroundColor: THEME.card,
     borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    padding: 8,
-    marginVertical: 4
+    borderColor: THEME.accentSoftBorder,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10
   },
   notifItemTitle: {
-    color: THEME.primary,
-    fontSize: 11,
+    color: THEME.text,
+    fontSize: 13,
     fontWeight: 'bold'
   },
   notifItemDesc: {
-    color: THEME.textMuted,
-    fontSize: 10,
-    marginTop: 2
+    color: THEME.textSecondary,
+    fontSize: 11,
+    marginTop: 3
   },
   payLinkBadge: {
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',
-    backgroundColor: '#FEE500',
-    borderRadius: 4,
+    backgroundColor: THEME.badgeBg,
+    borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 4
+    paddingVertical: 5
   },
   payLinkText: {
-    color: 'black',
+    color: THEME.accentSoft,
     fontSize: 10,
     fontWeight: 'bold'
   },
   noNotifsText: {
     color: THEME.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     textAlign: 'center',
-    paddingVertical: 20
+    paddingVertical: 28
+  },
+  notifFooter: {
+    color: THEME.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
+    paddingTop: 10
   },
   contentBody: {
     flex: 1
