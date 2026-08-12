@@ -14,9 +14,8 @@ import type { Message } from '../lib/types';
  * App.tsx 안에 인라인으로 있던 300여 줄을 옮기면서 리스킨했다.
  * 구성: roomHeader / 확정 배너 / 대화 목록 / 하단 패널 버튼 4개 / 입력 바.
  *
- * 하단 버튼 4개는 각 패널 항목(일정·메뉴·정산·멤버)에서 바텀시트로 다듬을
- * 예정이라, 지금은 기존 진입 경로(roomOverlay / roomSubTab / 방 상세정보)에
- * 그대로 연결해 두었다.
+ * 하단 버튼 4개는 전부 `roomOverlay` 로 하단 시트를 연다
+ * (일정 / 메뉴 / 정산 / 멤버 — 공통 껍데기는 `RoomPanelSheet`).
  */
 interface RoomChatViewProps {
   onSendMessage: () => void;
