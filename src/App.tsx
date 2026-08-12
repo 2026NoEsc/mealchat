@@ -125,9 +125,9 @@ function AppContent() {
   } = useLoading();
   const {
     activeTab, showCreateModal, showNotifications, showRoomInfoModal,
-    showSettingsModal, isSettingsGameActive, isSwipeBackBlocked, showGlobalDutchPay,
+    isSettingsGameActive, isSwipeBackBlocked, showGlobalDutchPay,
     setActiveTab, setShowCreateModal, setShowNotifications, setShowRoomInfoModal,
-    setShowSettingsModal, setIsSettingsGameActive, setIsSwipeBackBlocked,
+    setIsSettingsGameActive, setIsSwipeBackBlocked,
     setShowGlobalDutchPay
   } = useNavigation();
   // Stage 2a — 방 목록 / 현재 방 상태
@@ -274,13 +274,13 @@ function AppContent() {
     setIsSettingsGameActive(v === 'food_taste');
   }, []);
 
-  const settingsPanResponder = usePanResponderSwipeBack({
+  // 프로필 탭 안에서 뒤로 밀면 ProfileSetup 이 자기 하위 뷰(수정/취향게임)를
+  // 먼저 닫는다. 예전에는 못 닫았을 때 설정 모달을 닫았지만, 이제 프로필은
+  // 탭이라 닫을 것이 없다 — 그때는 아무 일도 하지 않는다.
+  const profilePanResponder = usePanResponderSwipeBack({
     enableCondition: () => !isSettingsGameActiveRef.current && !isSwipeBackBlockedRef.current,
     onSwipeBack: () => {
-      const handled = profileSetupRef.current?.handleSwipeBack();
-      if (!handled) {
-        setShowSettingsModal(false);
-      }
+      profileSetupRef.current?.handleSwipeBack();
     }
   });
 
@@ -3135,13 +3135,6 @@ ${inviteLink}
   };
 
   const handleTabChange = (tab: AppTab) => {
-    // TODO(담당자 B): "프로필을 탭으로 전환" 이 끝나면 이 분기를 지우고
-    //   `activeTab === 'profile'` 에서 ProfileSetup 의 'main' 뷰를 직렬 렌더할 것.
-    //   그 전까지는 기존 설정 모달을 열어 동작을 보존한다.
-    if (tab === 'profile') {
-      setShowSettingsModal(true);
-      return;
-    }
     setActiveTab(tab);
     if (globalProfile?.id) {
       fetchFollows(globalProfile.id);
@@ -3346,6 +3339,32 @@ ${inviteLink}
           />
         )}
 
+        {/* TAB 3: 프로필 (Figma 2_프로필/프로필 홈) */}
+        {activeTab === 'profile' && (
+          <View style={{ flex: 1 }} {...profilePanResponder.panHandlers}>
+          <ProfileSetup
+            ref={profileSetupRef}
+            initialData={globalProfile}
+            onSave={handleSaveProfile}
+            onSaveSchedule={handleSaveProfileSchedule}
+            roomParticipants={participants}
+            roomCode={currentRoom?.code}
+            activeRooms={currentRoom ? [currentRoom] : []}
+            onLogout={handleLogout}
+            onDeleteAccount={handleDeleteAccount}
+            onExportData={handleExportData}
+            onViewChange={handleSettingsViewChange}
+            onSwipeBackBlockChange={(blocked) => setIsSwipeBackBlocked(blocked)}
+            onSearchFriend={handleSearchFriend}
+            onGetRecommendedFriends={getRecommendedFriends}
+            onFollowUser={handleFollowUser}
+            searchResults={searchFriendResults}
+            recommendedFriends={recommendedFriends}
+            isSearching={isSearchingFriends}
+          />
+          </View>
+        )}
+
         {/* TAB 2: 부가기능 (Rooms & Settlings) */}
         {activeTab === 'chat' && (
           <View style={styles.tabBodyContainer}>
@@ -3433,45 +3452,6 @@ ${inviteLink}
       />
 
 
-
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettingsModal}
-        animationType="slide"
-        onRequestClose={() => setShowSettingsModal(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} {...settingsPanResponder.panHandlers}>
-          <ProfileSetup
-            ref={profileSetupRef}
-            initialData={globalProfile}
-            onSave={(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude, isTasteGame) => {
-              handleSaveProfile(name, color, personalData, tag, avatarUrl, startLocationName, startLatitude, startLongitude);
-              if (!isTasteGame) {
-                setShowSettingsModal(false);
-              }
-            }}
-            onSaveSchedule={handleSaveProfileSchedule}
-            roomParticipants={participants}
-            roomCode={currentRoom?.code}
-            activeRooms={currentRoom ? [currentRoom] : []}
-            onLogout={() => {
-              handleLogout();
-              setShowSettingsModal(false);
-            }}
-            onDeleteAccount={handleDeleteAccount}
-            onExportData={handleExportData}
-            onViewChange={handleSettingsViewChange}
-            onSwipeBackBlockChange={(blocked) => setIsSwipeBackBlocked(blocked)}
-            onClose={() => setShowSettingsModal(false)}
-            onSearchFriend={handleSearchFriend}
-            onGetRecommendedFriends={getRecommendedFriends}
-            onFollowUser={handleFollowUser}
-            searchResults={searchFriendResults}
-            recommendedFriends={recommendedFriends}
-            isSearching={isSearchingFriends}
-          />
-        </SafeAreaView>
-      </Modal>
 
       {/* 방 상세 정보 모달 — screens/RoomInfoModal.tsx 로 분리 */}
       <RoomInfoModal
