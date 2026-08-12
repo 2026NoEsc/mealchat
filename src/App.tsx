@@ -24,6 +24,8 @@ import RoomListView from './screens/RoomListView';
 import RoomScheduleSheet from './screens/RoomScheduleSheet';
 import RoomMenuTab from './screens/RoomMenuTab';
 import RoomChatView from './screens/RoomChatView';
+import RoomMemberSheet from './screens/RoomMemberSheet';
+import { RoomPanelSheet } from './components/RoomPanelSheet';
 import { HomeTab } from './screens/HomeTab';
 import { BottomNav } from './components/BottomNav';
 import { MealChatLogo } from './components/MealChatLogo';
@@ -3364,33 +3366,34 @@ ${inviteLink}
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
                 />
-
-                {/* 메뉴 패널.
-                    Figma 는 채팅 위에 뜨는 바텀시트(553:698)로 정리했지만,
-                    시트로 다듬는 것은 "채팅/메뉴 패널" 항목의 몫이다.
-                    지금은 채팅 위를 덮는 오버레이로 두어 닫을 길만 열어 둔다. */}
-                {roomSubTab === 'menu' && (
-                  <View style={styles.noticeDropdownOverlay}>
-                    <View style={styles.overlayHeader}>
-                      <Text style={styles.overlayHeaderTitle}>🍽️ 메뉴 정하기</Text>
-                      <TouchableOpacity onPress={() => setRoomSubTab('schedule')} style={styles.overlayCloseBtn}>
-                        <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <RoomMenuTab
-                        onUpdateMyVote={handleUpdateMyVote}
-                        onUpdatePoll={handleUpdatePoll}
-                      />
-                    </View>
-                  </View>
+                {/* 하단 패널 4종 — Figma `채팅/*` 패널.
+                    껍데기(손잡이·제목·부제·하단 버튼)는 RoomPanelSheet 가 맡고,
+                    안쪽 내용만 각 화면이 채운다. */}
+                {roomOverlay === 'menu' && (
+                  <RoomPanelSheet
+                    title="메뉴 정하기"
+                    subtitle="먹고 싶은 메뉴에 투표해 주세요"
+                    onClose={() => setRoomOverlay(null)}
+                    scrollable={false}
+                  >
+                    <RoomMenuTab
+                      onUpdateMyVote={handleUpdateMyVote}
+                      onUpdatePoll={handleUpdatePoll}
+                    />
+                  </RoomPanelSheet>
                 )}
 
-                {/* 일정 조율 / N빵 정산 시트
-                    방 컨테이너 직속으로 둔다. 예전에는 채팅 뷰 안쪽에 있어
-                    position:absolute 의 기준이 하단 일부 영역이 되었고,
-                    시트가 화면의 아래 26% 에만 갇혀 열렸다.
-                    문서 06 의 원본 레이아웃은 화면을 덮는 전체 패널이다. */}
+                {roomOverlay === 'members' && (
+                  <RoomMemberSheet
+                    onClose={() => setRoomOverlay(null)}
+                    onInvite={handleShareRoom}
+                    onViewProfile={(profileId) => {
+                      setRoomOverlay(null);
+                      handleViewProfile(profileId);
+                    }}
+                  />
+                )}
+
                 {roomOverlay === 'schedule' && (
                   <RoomScheduleSheet
                     onRunAIRecommendations={handleRunAIRecommendations}
@@ -3401,25 +3404,22 @@ ${inviteLink}
                   />
                 )}
 
-                  {roomOverlay === 'dutch' && (
-                    <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
-                      <View style={styles.overlayHeader}>
-                        <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
-                        <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
-                          <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <DutchPay
-                          roomId={currentRoom.id}
-                          roomTitle={currentRoom.title}
-                          currentParticipant={currentParticipant}
-                          participants={participants}
-                          globalProfile={globalProfile}
-                        />
-                      </View>
-                    </View>
-                  )}
+                {roomOverlay === 'dutch' && (
+                  <RoomPanelSheet
+                    title="N빵 정산"
+                    subtitle="결제 금액을 입력하면 자동으로 나눠요"
+                    onClose={() => setRoomOverlay(null)}
+                    scrollable={false}
+                  >
+                    <DutchPay
+                      roomId={currentRoom.id}
+                      roomTitle={currentRoom.title}
+                      currentParticipant={currentParticipant}
+                      participants={participants}
+                      globalProfile={globalProfile}
+                    />
+                  </RoomPanelSheet>
+                )}
               </View>
             ) : (
 

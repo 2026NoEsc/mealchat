@@ -19,6 +19,8 @@ export const themeColors = {
     infoSoft: '#4A90D9', // Figma "모집중" 칩 글자
     infoSoftBg: '#E8F2FF', // Figma "모집중" 칩 배경
     dividerSoft: '#D3D1C6', // Figma 채팅 날짜 구분선 (배경 위에서도 보이는 톤)
+    handleBar: '#D1D1D1', // Figma 바텀시트 손잡이
+    receiptBorder: '#EF9F27', // Figma 정산 패널 영수증 점선 테두리
     border: '#E6E6E6', // Figma redesign border
     input: '#FFFFFF',
     danger: '#F53942', // Figma redesign danger

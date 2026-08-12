@@ -101,19 +101,16 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.background }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+    <View style={{ flexShrink: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}>
         {/* 현황 표시 */}
         {(() => {
           const { selectedCount, totalCount } = getMenuProgress();
           const progressPercentage = totalCount > 0 ? (selectedCount / totalCount) * 100 : 0;
 
           return (
-            <View style={{ paddingVertical: 12, marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: THEME.text }}>
-                메뉴 선정
-              </Text>
-              <Text style={{ fontSize: 14, color: THEME.textMuted, marginTop: 4 }}>
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, color: THEME.textSecondary }}>
                 {totalCount}명 중 {selectedCount}명 선정 완료
               </Text>
               {/* 진행도 바 */}
@@ -202,7 +199,7 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
           const menus = getAllSelectedMenus();
           return menus.length > 0 ? (
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
                 선택된 메뉴
               </Text>
               {menus.map(menuName => {
@@ -213,12 +210,13 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
                   <TouchableOpacity
                     key={menuName}
                     style={{
-                      backgroundColor: isCurrentUserSelected ? THEME.menuComplete : THEME.surface,
-                      borderWidth: 2,
-                      borderColor: isCurrentUserSelected ? THEME.menuComplete : THEME.border,
-                      borderRadius: 12,
-                      padding: 12,
-                      marginBottom: 8,
+                      backgroundColor: isCurrentUserSelected ? THEME.surfaceHighlight : THEME.card,
+                      borderWidth: 1,
+                      borderColor: isCurrentUserSelected ? THEME.accentSoft : THEME.cardBorder,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      height: 46,
+                      marginBottom: 6,
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -235,21 +233,17 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
                       }
                     }}
                   >
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: isCurrentUserSelected ? '#FFFFFF' : THEME.text, flex: 1 }}>
-                      {menuName}
-                    </Text>
-                    <View
+                    <Text
                       style={{
-                        backgroundColor: THEME.menuNeeded,
-                        borderRadius: 12,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: isCurrentUserSelected ? THEME.accentSoft : THEME.text,
+                        flex: 1,
                       }}
                     >
-                      <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>
-                        {voteCount}명
-                      </Text>
-                    </View>
+                      {menuName}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: THEME.textSecondary }}>{voteCount}표</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -273,18 +267,18 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
             없는 막다른 길이었습니다. */}
         <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: THEME.border }}>
           <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text, marginBottom: 8 }}>
-            메뉴 직접 제안
+            ＋ 메뉴 직접 추가
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TextInput
               style={{
                 flex: 1,
                 borderWidth: 1,
-                borderColor: THEME.border,
-                borderRadius: 8,
+                borderColor: THEME.cardBorder,
+                borderRadius: 10,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
-                fontSize: 14,
+                fontSize: 13,
                 color: THEME.text,
                 backgroundColor: THEME.surface,
               }}
@@ -300,8 +294,8 @@ const RoomMenuTab: React.FC<RoomMenuTabProps> = ({
               style={{
                 paddingHorizontal: 18,
                 justifyContent: 'center',
-                backgroundColor: draftMenu.trim() ? THEME.menuNeeded : THEME.border,
-                borderRadius: 8,
+                backgroundColor: draftMenu.trim() ? THEME.primary : THEME.border,
+                borderRadius: 10,
               }}
               disabled={!draftMenu.trim()}
               onPress={() => addMenu(draftMenu)}

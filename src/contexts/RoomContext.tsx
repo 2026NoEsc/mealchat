@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useMemo, ReactNode } from '
 import type { Room, Participant, Message, RoomSummary } from '../lib/types';
 
 /**
+ * 방 안에서 채팅 위에 열리는 하단 패널.
+ * Figma `채팅/*` 패널 4종에 맞춰 menu·members 를 더했다.
+ */
+export type RoomOverlay = 'schedule' | 'menu' | 'dutch' | 'members' | null;
+
+/**
  * 방 목록 / 현재 열려 있는 방의 상태.
  *
  * timeLeft(만료 카운트다운)는 여기 두지 않았습니다. 1초마다 바뀌어서
@@ -19,7 +25,7 @@ interface RoomContextType {
   roomMessages: Message[];
   newMessageText: string;
   /** 방 안 하단 시트에 무엇을 띄울지 (null이면 닫힘) */
-  roomOverlay: 'schedule' | 'dutch' | null;
+  roomOverlay: RoomOverlay;
   /** 방 안 서브 탭 */
   roomSubTab: 'schedule' | 'menu' | 'baemin' | 'dutch';
   showEmoticonPicker: boolean;
@@ -32,7 +38,7 @@ interface RoomContextType {
   setCurrentParticipant: React.Dispatch<React.SetStateAction<Participant | null>>;
   setRoomMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setNewMessageText: React.Dispatch<React.SetStateAction<string>>;
-  setRoomOverlay: React.Dispatch<React.SetStateAction<'schedule' | 'dutch' | null>>;
+  setRoomOverlay: React.Dispatch<React.SetStateAction<RoomOverlay>>;
   setRoomSubTab: React.Dispatch<React.SetStateAction<'schedule' | 'menu' | 'baemin' | 'dutch'>>;
   setShowEmoticonPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setRoomsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -49,7 +55,7 @@ export const RoomProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
-  const [roomOverlay, setRoomOverlay] = useState<'schedule' | 'dutch' | null>(null);
+  const [roomOverlay, setRoomOverlay] = useState<RoomOverlay>(null);
   const [roomSubTab, setRoomSubTab] = useState<'schedule' | 'menu' | 'baemin' | 'dutch'>('schedule');
   const [showEmoticonPicker, setShowEmoticonPicker] = useState(false);
   const [roomsLoading, setRoomsLoading] = useState(false);

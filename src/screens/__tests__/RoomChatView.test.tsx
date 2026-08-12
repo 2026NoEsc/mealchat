@@ -115,13 +115,13 @@ describe('RoomChatView', () => {
     expect(setRoomOverlay).toHaveBeenCalledWith('schedule');
 
     await fireEvent.press(await findByText('메뉴 정하기'));
-    expect(setRoomSubTab).toHaveBeenCalledWith('menu');
+    expect(setRoomOverlay).toHaveBeenCalledWith('menu');
 
     await fireEvent.press(await findByText('N빵 정산'));
     expect(setRoomOverlay).toHaveBeenCalledWith('dutch');
 
     await fireEvent.press(await findByText('멤버'));
-    expect(setShowRoomInfoModal).toHaveBeenCalledWith(true);
+    expect(setRoomOverlay).toHaveBeenCalledWith('members');
   });
 
   it('하루짜리 방이 아니면 일정 조율 버튼을 숨긴다', async () => {

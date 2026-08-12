@@ -72,7 +72,7 @@ const RoomChatView: React.FC<RoomChatViewProps> = ({
   const { timeLeft } = useRoomTimer();
   const {
     currentRoom, participants, roomMessages, newMessageText, showEmoticonPicker,
-    setNewMessageText, setShowEmoticonPicker, setRoomOverlay, setRoomSubTab,
+    setNewMessageText, setShowEmoticonPicker, setRoomOverlay,
   } = useRoom();
 
   const scrollRef = useRef<ScrollView>(null);
@@ -203,7 +203,7 @@ const RoomChatView: React.FC<RoomChatViewProps> = ({
             <Text style={styles.panelButtonText}>일정 조율</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.panelButton} onPress={() => setRoomSubTab('menu')}>
+        <TouchableOpacity style={styles.panelButton} onPress={() => setRoomOverlay('menu')}>
           <Utensils size={18} color={THEME.textSecondary} />
           <Text style={styles.panelButtonText}>메뉴 정하기</Text>
         </TouchableOpacity>
@@ -211,7 +211,7 @@ const RoomChatView: React.FC<RoomChatViewProps> = ({
           <Wallet size={18} color={THEME.textSecondary} />
           <Text style={styles.panelButtonText}>N빵 정산</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.panelButton} onPress={openRoomInfo}>
+        <TouchableOpacity style={styles.panelButton} onPress={() => setRoomOverlay('members')}>
           <Users size={18} color={THEME.textSecondary} />
           <Text style={styles.panelButtonText}>멤버</Text>
         </TouchableOpacity>
