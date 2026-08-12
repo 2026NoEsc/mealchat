@@ -44,6 +44,9 @@ Figma MCP 도구가 연결되어 있다면:
 | `#E6E6E6` (테두리/구분선) | `THEME.border` / `THEME.cardBorder` |
 | `#F53942` (위험/삭제) | `THEME.danger` |
 | `#F7EFE6` (아이콘 틴트 배경) | `THEME.badgeBg` |
+| `#737373` (홈 본문 보조 텍스트) | `THEME.textSecondary` |
+| `#FF8C3B` (홈 배지 / 링크 강조) | `THEME.accentSoft` |
+| `#FFD9B8` (PayNudge 카드 테두리) | `THEME.accentSoftBorder` |
 
 **새 색상이 필요하면 컴포넌트에 하드코딩하지 말고 `theme.ts`에 토큰을 추가**하고 이 표에도 한 줄 추가할 것.
 

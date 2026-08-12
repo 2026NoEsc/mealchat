@@ -12,6 +12,9 @@ export const themeColors = {
     text: '#000000', // Figma redesign text
     textMuted: '#9C9C9C', // Figma redesign muted text
     textTertiary: '#B4B2A8', // Figma redesign tertiary text
+    textSecondary: '#737373', // Figma 홈 본문 보조 텍스트
+    accentSoft: '#FF8C3B', // Figma 홈 배지 / 링크 강조 오렌지
+    accentSoftBorder: '#FFD9B8', // Figma PayNudge 카드 테두리
     border: '#E6E6E6', // Figma redesign border
     input: '#FFFFFF',
     danger: '#F53942', // Figma redesign danger
