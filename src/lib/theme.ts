@@ -21,6 +21,8 @@ export const themeColors = {
     dividerSoft: '#D3D1C6', // Figma 채팅 날짜 구분선 (배경 위에서도 보이는 톤)
     handleBar: '#D1D1D1', // Figma 바텀시트 손잡이
     receiptBorder: '#EF9F27', // Figma 정산 패널 영수증 점선 테두리
+    labelMuted: '#88877F', // Figma Gray 400 — 입력 항목 라벨
+    unitMuted: '#5F5E5B', // Figma Gray 600 — 단위(년/월/일) 표기
     border: '#E6E6E6', // Figma redesign border
     input: '#FFFFFF',
     danger: '#F53942', // Figma redesign danger
