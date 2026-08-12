@@ -3399,15 +3399,7 @@ ${inviteLink}
                   </TouchableOpacity>
                 </View>
 
-                {/* 방 나가기/삭제 버튼 */}
-                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-                  <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: '#FEE2E2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
-                    onPress={handleLeaveRoom}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#DC2626' }}>🚪 방 나가기</Text>
-                  </TouchableOpacity>
-                </View>
+                {/* 방 나가기는 Figma 처럼 방 상세정보 화면으로 옮겼다 */}
 
                 {/* KakaoNotice Bar */}
                 <View style={styles.kakaoNoticeArea}>
@@ -3777,6 +3769,7 @@ ${inviteLink}
         onKickParticipant={handleKickParticipant}
         onShareRoom={handleShareRoom}
         onViewProfile={handleViewProfile}
+        onLeaveRoom={handleLeaveRoom}
       />
 
       {/* N빵 정산 대장 — screens/GlobalDutchPayModal.tsx 로 분리 */}
@@ -4406,22 +4399,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     justifyContent: 'center',
     alignItems: 'center'
-  },
-  leaveRoomBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8
-  },
-  leaveRoomBtnText: {
-    color: '#ef4444',
-    fontSize: 11,
-    fontWeight: 'bold'
   },
   modalProfileAvatar: {
     width: 60,
