@@ -133,7 +133,7 @@ function AppContent() {
   // Stage 2a — 방 목록 / 현재 방 상태
   const {
     roomList, currentRoom, participants, currentParticipant,
-    newMessageText, roomOverlay, roomSubTab,
+    newMessageText, roomOverlay,
     roomsLoading, participantsLoading,
     setRoomList, setRoomSummaries, setCurrentRoom, setParticipants, setCurrentParticipant,
     setRoomMessages, setNewMessageText, setRoomOverlay, setRoomSubTab,
@@ -729,8 +729,11 @@ function AppContent() {
         }
 
         setCurrentRoom(data as Room);
-        setRoomSubTab(target === 'dutch' ? 'dutch' : 'schedule');
-        setRoomOverlay(null);
+        setRoomSubTab('schedule');
+        // 정산 알림을 탭했으면 정산 패널까지 열어 준다.
+        // 전에는 roomSubTab 을 'dutch' 로 두고 오버레이를 닫았는데,
+        // 'dutch' 서브탭을 그리는 곳이 없어 그냥 채팅만 열렸다.
+        setRoomOverlay(target === 'dutch' ? 'dutch' : null);
         setActiveTab('chat');
       } catch (err) {
         console.error('[NotificationTap] Unexpected error:', err);

@@ -23,6 +23,12 @@ interface RoomPanelSheetProps {
    * `false` 로 넘겨 중첩 스크롤을 피한다.
    */
   scrollable?: boolean;
+  /**
+   * 시트를 화면 전체 높이로 연다.
+   * 안쪽에 `ScheduleGrid` 처럼 최소 높이를 요구하는 큰 컴포넌트가 들어갈 때
+   * 쓴다 — 높이가 모자라면 그 컴포넌트가 0으로 접힌 전례가 있다.
+   */
+  expanded?: boolean;
 }
 
 export const RoomPanelSheet: React.FC<RoomPanelSheetProps> = ({
@@ -32,13 +38,14 @@ export const RoomPanelSheet: React.FC<RoomPanelSheetProps> = ({
   children,
   footer,
   scrollable = true,
+  expanded = false,
 }) => (
   <View style={styles.overlay}>
     <TouchableWithoutFeedback onPress={onClose} accessible={false}>
       <View style={styles.dim} />
     </TouchableWithoutFeedback>
 
-    <View style={styles.sheet}>
+    <View style={[styles.sheet, expanded && styles.sheetExpanded]}>
       <TouchableOpacity
         style={styles.handleTapTarget}
         onPress={onClose}
@@ -61,7 +68,7 @@ export const RoomPanelSheet: React.FC<RoomPanelSheetProps> = ({
           {children}
         </ScrollView>
       ) : (
-        <View style={styles.plainContent}>{children}</View>
+        <View style={[styles.plainContent, expanded && styles.plainContentExpanded]}>{children}</View>
       )}
 
       {footer && <View style={styles.footer}>{footer}</View>}
@@ -124,9 +131,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 8,
   },
+  sheetExpanded: {
+    flex: 1,
+    maxHeight: '100%',
+  },
   plainContent: {
     flexShrink: 1,
     marginTop: 12,
+  },
+  plainContentExpanded: {
+    flex: 1,
   },
   footer: {
     paddingHorizontal: 20,
