@@ -106,17 +106,17 @@ const RoomListView: React.FC<RoomListViewProps> = ({
                 onChatPress={() => {
                   setCurrentRoom(room);
                   setRoomSubTab('schedule');
-                  setActiveTab('addons');
+                  setActiveTab('chat');
                 }}
                 onMenuPress={() => {
                   setCurrentRoom(room);
                   setRoomSubTab('menu');
-                  setActiveTab('addons');
+                  setActiveTab('chat');
                 }}
                 onSchedulePress={() => {
                   setCurrentRoom(room);
                   setRoomOverlay('schedule');
-                  setActiveTab('addons');
+                  setActiveTab('chat');
                 }}
               />
             );

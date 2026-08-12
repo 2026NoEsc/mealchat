@@ -23,6 +23,8 @@ import LocationPickerModal from './screens/LocationPickerModal';
 import RoomListView from './screens/RoomListView';
 import RoomScheduleSheet from './screens/RoomScheduleSheet';
 import RoomMenuTab from './screens/RoomMenuTab';
+import { HomeTab } from './screens/HomeTab';
+import { BottomNav } from './components/BottomNav';
 import { MealChatLogo } from './components/MealChatLogo';
 import { calculateAIRecommendations } from './lib/aiRecommender';
 import { DutchPay } from './components/DutchPay';
@@ -33,7 +35,7 @@ import { THEME } from './lib/theme';
 import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from './lib/roomUtils';
 import { sendScheduleConfirmedNotification, sendRoomParticipationNotification, sendMessageNotification, setupNotificationListeners, sendUnpaidBillNotification, sendRoomCreatedNotification, sendUserJoinedNotification, scheduleConfirmedReminderNotification, cancelNotificationsByType } from './lib/notificationUtils';
 import type { NotificationTarget } from './lib/notificationUtils';
-import { Sparkles, Calendar as CalendarIcon, Bell, Lock, ExternalLink, Plus, Send, Volume2, ChevronLeft, X, Settings, Smile } from 'lucide-react-native';
+import { Bell, Lock, ExternalLink, Plus, Send, Volume2, ChevronLeft, X, Settings, Smile } from 'lucide-react-native';
 import {
   AuthProvider,
   NetworkProvider,
@@ -58,6 +60,7 @@ import {
   useAI,
   useNotification
 } from './contexts';
+import type { AppTab } from './contexts';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -487,7 +490,7 @@ function AppContent() {
         Alert.alert('안내', '이미 참여한 방입니다.');
         setCurrentRoom(room);
         setRoomSubTab('schedule');
-        setActiveTab('addons');
+        setActiveTab('chat');
         return;
       }
 
@@ -498,7 +501,7 @@ function AppContent() {
       // 7. 방 및 탭 설정
       setCurrentRoom(room);
       setRoomSubTab('schedule');
-      setActiveTab('addons');
+      setActiveTab('chat');
 
       Alert.alert('초대 수락 완료', `'${room.title}' 방에 성공적으로 입장했습니다! 🎉`);
     } catch (err) {
@@ -712,7 +715,7 @@ function AppContent() {
             console.log('[PendingJoinCode] User already participates in this room');
             Alert.alert('안내', '이미 참여한 방입니다.');
             setCurrentRoom(room as Room);
-            setActiveTab('addons');
+            setActiveTab('chat');
             return;
           }
 
@@ -745,7 +748,7 @@ function AppContent() {
         setCurrentRoom(data as Room);
         setRoomSubTab(target === 'dutch' ? 'dutch' : 'schedule');
         setRoomOverlay(null);
-        setActiveTab('addons');
+        setActiveTab('chat');
       } catch (err) {
         console.error('[NotificationTap] Unexpected error:', err);
       }
@@ -1602,7 +1605,7 @@ function AppContent() {
           setJoinRoomCode('');
           setCurrentRoom(data);
           setRoomSubTab('schedule');
-          setActiveTab('addons');
+          setActiveTab('chat');
           return;
         }
       }
@@ -1610,7 +1613,7 @@ function AppContent() {
       setJoinRoomCode('');
       setCurrentRoom(data);
       setRoomSubTab('schedule');
-      setActiveTab('addons');
+      setActiveTab('chat');
 
       // 방에 입장한 사람이 들어왔다는 알림 발송 (모두에게)
       if (globalProfile) {
@@ -1709,7 +1712,7 @@ function AppContent() {
         `약속 조율 방이 생성되었습니다!\n초대코드: ${code}`
       );
 
-      setActiveTab('addons');
+      setActiveTab('chat');
       setCurrentRoom(room);
       setRoomOverlay('schedule');
       setRoomSubTab('schedule');
@@ -3091,7 +3094,14 @@ ${inviteLink}
     }
   };
 
-  const handleTabChange = (tab: 'schedule' | 'addons') => {
+  const handleTabChange = (tab: AppTab) => {
+    // TODO(담당자 B): "프로필을 탭으로 전환" 이 끝나면 이 분기를 지우고
+    //   `activeTab === 'profile'` 에서 ProfileSetup 의 'main' 뷰를 직렬 렌더할 것.
+    //   그 전까지는 기존 설정 모달을 열어 동작을 보존한다.
+    if (tab === 'profile') {
+      setShowSettingsModal(true);
+      return;
+    }
     setActiveTab(tab);
     if (globalProfile?.id) {
       fetchFollows(globalProfile.id);
@@ -3203,7 +3213,7 @@ ${inviteLink}
         </TouchableOpacity>
 
         <View style={styles.headerControls}>
-          {activeTab === 'addons' && !currentRoom && !isProfileIncomplete && (
+          {activeTab === 'chat' && !currentRoom && !isProfileIncomplete && (
             <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
               <Plus size={16} color="white" style={{ marginRight: 6 }} />
               <Text style={styles.createBtnText}>새 약속 만들기</Text>
@@ -3274,7 +3284,25 @@ ${inviteLink}
 
       {/* Main Content Area */}
       <View style={styles.contentBody}>
-        
+
+        {/* TAB 0: 홈 (Figma 2_홈/홈/메인) */}
+        {activeTab === 'home' && (
+          <HomeTab
+            userName={globalProfile?.name ?? '밀챗'}
+            rooms={roomList}
+            unsettledCount={appNotifications.filter(notif => notif.amount > 0).length}
+            onCreateSchedule={() => setShowCreateModal(true)}
+            onSelectSchedule={roomId => {
+              const room = roomList.find(r => r.id === roomId);
+              if (!room) return;
+              setCurrentRoom(room);
+              setRoomSubTab('schedule');
+              setActiveTab('chat');
+            }}
+            onViewSettlements={() => setShowGlobalDutchPay(true)}
+          />
+        )}
+
         {/* TAB 1: 일정 조정 (Friend Heatmap Coordination) */}
         {activeTab === 'schedule' && (
           <ScheduleTab
@@ -3289,7 +3317,7 @@ ${inviteLink}
         )}
 
         {/* TAB 2: 부가기능 (Rooms & Settlings) */}
-        {activeTab === 'addons' && (
+        {activeTab === 'chat' && (
           <View style={styles.tabBodyContainer}>
             {currentRoom ? (
               <View style={{ flex: 1, backgroundColor: THEME.background }}>
@@ -3636,30 +3664,8 @@ ${inviteLink}
       </View>
 
 
-      {/* Bottom Tab Navigation */}
-      {!currentRoom && (
-        <View style={styles.tabNavigation}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'schedule' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('schedule')}
-          >
-            <CalendarIcon size={20} color={activeTab === 'schedule' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'schedule' && styles.tabButtonTextActive]}>
-              일정 조율
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'addons' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('addons')}
-          >
-            <Sparkles size={20} color={activeTab === 'addons' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'addons' && styles.tabButtonTextActive]}>
-              채팅방
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Bottom Tab Navigation — Figma Design System / BottomNav1~4 */}
+      {!currentRoom && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
 
       {/* 프로필 상세 모달 — screens/ProfileViewModal.tsx 로 분리 */}
       <ProfileViewModal
@@ -4154,36 +4160,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14
-  },
-  tabNavigation: {
-    flexDirection: 'row',
-    backgroundColor: THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    height: 60,
-    justifyContent: 'space-around',
-    alignItems: 'center'
-  },
-  tabButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent'
-  },
-  tabButtonActive: {
-    borderBottomColor: THEME.primary
-  },
-  tabButtonText: {
-    fontSize: 11,
-    color: THEME.textMuted,
-    marginTop: 4,
-    fontWeight: '500'
-  },
-  tabButtonTextActive: {
-    color: THEME.primary,
-    fontWeight: 'bold'
   },
   modalBtnRow: {
     flexDirection: 'row',
