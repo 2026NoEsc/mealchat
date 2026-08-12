@@ -1,4 +1,4 @@
-import { normalizeAllergies, normalizeHealthIssues } from '../personalDataUtils';
+import { normalizeAllergies, normalizeHealthIssues, formatBirthdate } from '../personalDataUtils';
 
 /**
  * 이 정규화가 왜 있는지는 실제 사고에서 나왔습니다.
@@ -65,5 +65,26 @@ describe('normalizeHealthIssues', () => {
   it('알레르기 조회표와 섞이지 않는다', () => {
     // 두 조회표가 합쳐져 있으면 '갑각류'가 지병으로도 매칭돼버린다.
     expect(normalizeHealthIssues(['갑각류'])).toEqual(['갑각류']);
+  });
+});
+
+describe('formatBirthdate', () => {
+  it('구분자 없는 8자리를 날짜로 읽히게 만든다', () => {
+    // 프로필 홈에 "20001010" 이 그대로 나오고 있었다
+    expect(formatBirthdate('20001010')).toBe('2000년 10월 10일');
+    expect(formatBirthdate('20021220')).toBe('2002년 12월 20일');
+  });
+
+  it('앞자리 0 을 붙이지 않는다', () => {
+    expect(formatBirthdate('20020105')).toBe('2002년 1월 5일');
+  });
+
+  it('8자리가 아니면 손대지 않는다', () => {
+    expect(formatBirthdate('2002')).toBe('2002');
+  });
+
+  it('값이 없으면 안내 문구', () => {
+    expect(formatBirthdate(undefined)).toBe('아직 설정 안됨');
+    expect(formatBirthdate('')).toBe('아직 설정 안됨');
   });
 });
