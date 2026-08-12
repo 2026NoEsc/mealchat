@@ -1,6 +1,9 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Plus } from 'lucide-react-native';
 import { ScheduleGrid } from '../components/ScheduleGrid';
+import ScheduleWizard from './schedule/ScheduleWizard';
+import { THEME } from '../lib/theme';
 import { useAuth, useRoom } from '../contexts';
 import type { Profile, ScheduleAvailability } from '../lib/types';
 
@@ -41,8 +44,37 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
   const { globalProfile, myFollows } = useAuth();
   const { roomList } = useRoom();
 
+  // Figma 는 일정 추가를 STEP 1~3 + 확정의 별도 화면으로 나눠 두었다.
+  // 허브에서 "＋ 일정 추가" 를 누르면 그 마법사가 탭 전체를 덮는다.
+  const [showWizard, setShowWizard] = useState(false);
+
+  if (showWizard) {
+    return (
+      <View style={styles.tabBody}>
+        <ScheduleWizard
+          onClose={() => setShowWizard(false)}
+          onSaveSchedule={onSaveSchedule}
+          onCoordinationConfirm={onCoordinationConfirm}
+          onUpdateRoom={onUpdateRoom}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.tabBody}>
+      {/* 허브 상단 — Figma `일정 조율`(309:1077) 의 제목 + 일정 추가 */}
+      <View style={styles.hubHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.hubTitle}>실시간 캘린더 조율</Text>
+          <Text style={styles.hubSubtitle}>구체적인 약속 일정을 정해주세요</Text>
+        </View>
+        <TouchableOpacity style={styles.addButton} onPress={() => setShowWizard(true)}>
+          <Plus size={14} color="#FFFFFF" />
+          <Text style={styles.addButtonText}>일정 추가</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScheduleGrid
         meetingDate={new Date().toISOString().split('T')[0]}
         participants={[]}
@@ -64,6 +96,38 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
 const styles = StyleSheet.create({
   tabBody: {
     flex: 1
+  },
+  hubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  hubTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  hubSubtitle: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginTop: 3,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: THEME.primary,
+  },
+  addButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   }
 });
 

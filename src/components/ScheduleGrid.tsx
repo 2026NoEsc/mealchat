@@ -3018,25 +3018,19 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
             )}
           </View>
 
+          {/* Figma `일정 조율`(309:1077) 은 셀 안에 제목을 넣지 않고 점만 찍는다.
+              상세(제목·시간)는 달력 아래 "그날 일정" 목록에서 보여 준다. */}
           <View style={styles.calendarEventsIndicator}>
-            {dayEvents.slice(0, 1).map((evt, idx) => (
-              <View key={idx} style={[styles.eventDot, { backgroundColor: '#04C6E2' }]}>
-                <Text style={styles.eventDotText} numberOfLines={1}>
-                  {evt.title}
-                </Text>
-              </View>
-            ))}
-            {dayNotes.slice(0, 1).map((note, idx) => (
-              <View key={`note-${idx}`} style={[styles.eventDot, { backgroundColor: note.color || THEME.primary }]}>
-                <Text style={styles.eventDotText} numberOfLines={1}>
-                  {note.title}
-                </Text>
-              </View>
-            ))}
+            {dayEvents.length > 0 && (
+              <View style={[styles.calendarDayDot, { backgroundColor: THEME.textTertiary }]} />
+            )}
+            {dayNotes.length > 0 && (
+              <View style={[styles.calendarDayDot, { backgroundColor: dayNotes[0].color || THEME.primary }]} />
+            )}
             {isTargetMeeting && (
-              <View style={[styles.eventDot, { backgroundColor: confirmedRoom?.color || '#F7688B' }]}>
-                <Text style={styles.eventDotText}>밀챗!</Text>
-              </View>
+              <View
+                style={[styles.calendarDayDot, { backgroundColor: confirmedRoom?.color || THEME.primary }]}
+              />
             )}
           </View>
         </TouchableOpacity>
@@ -5050,6 +5044,12 @@ const WheelSpinner: React.FC<WheelSpinnerProps> = ({ data, selectedValue, onValu
 };
 
 const styles = StyleSheet.create({
+  /** Figma 달력 셀의 일정 표시 — 제목 대신 점 하나 */
+  calendarDayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
   selectionModeContainer: {
     flexDirection: 'row',
     backgroundColor: THEME.surfaceDarker,
@@ -5276,19 +5276,15 @@ const styles = StyleSheet.create({
   },
   calendarCellEmpty: {
     flex: 1,
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border
+    height: 44
   },
   calendarCell: {
     flex: 1,
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    borderRightWidth: 1,
-    borderRightColor: THEME.border,
+    height: 44,
+    borderRadius: 10,
     padding: 3,
-    justifyContent: 'space-between'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   calendarCellSelected: {
     borderWidth: 1.5,
@@ -5312,9 +5308,10 @@ const styles = StyleSheet.create({
     color: THEME.text
   },
   calendarEventsIndicator: {
-    flexDirection: 'column',
-    gap: 1,
-    marginTop: 1
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 3,
+    marginTop: 2
   },
   eventDot: {
     backgroundColor: '#8b5cf6',

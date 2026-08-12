@@ -49,6 +49,8 @@ export interface PrivacySettings {
   birthdate: PrivacyLevel;
   gender: PrivacyLevel;
   bank_account: PrivacyLevel;
+  /** 한마디 멘트. Figma `프로필/정보 공개 범위`(256:2494)가 요구해 추가했다 */
+  bio?: PrivacyLevel;
 
   // 아래 4개는 프로필 열람 화면(App.tsx:4151~4172)이 isFieldVisible()로 조회하지만,
   // 설정의 '정보 공개 범위' 섹션(ProfileSetup.tsx:2074~)에는 토글 UI가 없습니다.
