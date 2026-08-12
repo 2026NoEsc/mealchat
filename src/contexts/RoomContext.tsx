@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
-import type { Room, Participant, Message } from '../lib/types';
+import type { Room, Participant, Message, RoomSummary } from '../lib/types';
 
 /**
  * 방 목록 / 현재 열려 있는 방의 상태.
@@ -10,6 +10,8 @@ import type { Room, Participant, Message } from '../lib/types';
  */
 interface RoomContextType {
   roomList: Room[];
+  /** 방 id → 카드용 요약(멤버 아바타 / 마지막 메시지). 방 목록과 함께 채워진다 */
+  roomSummaries: Record<string, RoomSummary>;
   currentRoom: Room | null;
   participants: Participant[];
   /** 현재 방에서의 내 참여자 행 */
@@ -24,6 +26,7 @@ interface RoomContextType {
   roomsLoading: boolean;
   participantsLoading: boolean;
   setRoomList: React.Dispatch<React.SetStateAction<Room[]>>;
+  setRoomSummaries: React.Dispatch<React.SetStateAction<Record<string, RoomSummary>>>;
   setCurrentRoom: React.Dispatch<React.SetStateAction<Room | null>>;
   setParticipants: React.Dispatch<React.SetStateAction<Participant[]>>;
   setCurrentParticipant: React.Dispatch<React.SetStateAction<Participant | null>>;
@@ -40,6 +43,7 @@ const RoomContext = createContext<RoomContextType | undefined>(undefined);
 
 export const RoomProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [roomList, setRoomList] = useState<Room[]>([]);
+  const [roomSummaries, setRoomSummaries] = useState<Record<string, RoomSummary>>({});
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
@@ -53,6 +57,7 @@ export const RoomProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const value = useMemo<RoomContextType>(() => ({
     roomList,
+    roomSummaries,
     currentRoom,
     participants,
     currentParticipant,
@@ -64,6 +69,7 @@ export const RoomProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     roomsLoading,
     participantsLoading,
     setRoomList,
+    setRoomSummaries,
     setCurrentRoom,
     setParticipants,
     setCurrentParticipant,
@@ -75,7 +81,7 @@ export const RoomProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setRoomsLoading,
     setParticipantsLoading,
   }), [
-    roomList, currentRoom, participants, currentParticipant, roomMessages,
+    roomList, roomSummaries, currentRoom, participants, currentParticipant, roomMessages,
     newMessageText, roomOverlay, roomSubTab, showEmoticonPicker,
     roomsLoading, participantsLoading
   ]);

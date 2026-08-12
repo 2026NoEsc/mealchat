@@ -10,7 +10,7 @@ import * as Notifications from 'expo-notifications';
 
 import { supabase } from './lib/supabaseClient';
 import { withSessionRetry, describeJwtError } from './lib/supabaseRetry';
-import type { Room, PersonalData, ScheduleAvailability, Profile, AppNotification, Message, PrivacySettings } from './lib/types';
+import type { Room, PersonalData, ScheduleAvailability, Profile, AppNotification, Message, PrivacySettings, RoomSummary } from './lib/types';
 import { usePanResponderSwipeBack } from './lib/usePanResponderSwipeBack';
 import { ProfileSetup } from './components/ProfileSetup';
 import ScheduleTab from './screens/ScheduleTab';
@@ -35,7 +35,7 @@ import { THEME } from './lib/theme';
 import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from './lib/roomUtils';
 import { sendScheduleConfirmedNotification, sendRoomParticipationNotification, sendMessageNotification, setupNotificationListeners, sendUnpaidBillNotification, sendRoomCreatedNotification, sendUserJoinedNotification, scheduleConfirmedReminderNotification, cancelNotificationsByType } from './lib/notificationUtils';
 import type { NotificationTarget } from './lib/notificationUtils';
-import { Bell, Lock, ExternalLink, Plus, Send, Volume2, ChevronLeft, X, Settings, Smile } from 'lucide-react-native';
+import { Bell, Lock, ExternalLink, Send, Volume2, ChevronLeft, X, Settings, Smile } from 'lucide-react-native';
 import {
   AuthProvider,
   NetworkProvider,
@@ -152,7 +152,7 @@ function AppContent() {
     roomList, currentRoom, participants, currentParticipant, roomMessages,
     newMessageText, roomOverlay, roomSubTab, showEmoticonPicker,
     roomsLoading, participantsLoading,
-    setRoomList, setCurrentRoom, setParticipants, setCurrentParticipant,
+    setRoomList, setRoomSummaries, setCurrentRoom, setParticipants, setCurrentParticipant,
     setRoomMessages, setNewMessageText, setRoomOverlay, setRoomSubTab,
     setShowEmoticonPicker, setRoomsLoading, setParticipantsLoading
   } = useRoom();
@@ -925,6 +925,62 @@ function AppContent() {
     }
   };
 
+  /**
+   * 방 목록 카드가 쓰는 부가 정보(멤버 아바타 / 마지막 메시지)를 모아 온다.
+   *
+   * `rooms` 테이블에 없는 값이라 방마다 따로 필요하지만, 방 수만큼 쿼리를 날리는
+   * 대신 참여자 1회 + 메시지 1회로 끝내고 클라이언트에서 방별로 접는다.
+   * 실패해도 방 목록 자체는 이미 그려진 뒤이므로 조용히 넘긴다 — 카드가
+   * 아바타/미리보기 없이 나올 뿐이다.
+   */
+  const fetchRoomSummaries = async (roomIds: string[]) => {
+    if (roomIds.length === 0) {
+      setRoomSummaries({});
+      return;
+    }
+    try {
+      const [membersResult, messagesResult] = await Promise.all([
+        supabase
+          .from('participants')
+          .select('id, room_id, name, avatar_color, avatar_url')
+          .in('room_id', roomIds),
+        supabase
+          .from('messages')
+          .select('room_id, message, created_at')
+          .in('room_id', roomIds)
+          .order('created_at', { ascending: false })
+          .limit(300),
+      ]);
+
+      if (membersResult.error) throw membersResult.error;
+      if (messagesResult.error) throw messagesResult.error;
+
+      const summaries: Record<string, RoomSummary> = {};
+      for (const id of roomIds) {
+        summaries[id] = { members: [] };
+      }
+      for (const row of membersResult.data || []) {
+        summaries[row.room_id]?.members.push({
+          id: row.id,
+          name: row.name,
+          avatarColor: row.avatar_color,
+          avatarUrl: row.avatar_url || undefined,
+        });
+      }
+      // created_at 내림차순이므로 방마다 처음 만나는 행이 마지막 메시지다
+      for (const row of messagesResult.data || []) {
+        const summary = summaries[row.room_id];
+        if (summary && !summary.lastActivityAt) {
+          summary.lastMessage = row.message;
+          summary.lastActivityAt = row.created_at;
+        }
+      }
+      setRoomSummaries(summaries);
+    } catch (err) {
+      console.warn('[FetchRoomSummaries] Could not load room card details:', err);
+    }
+  };
+
   // Fetch all active rooms
   const fetchRooms = async () => {
     if (!user || !globalProfile) return;
@@ -951,6 +1007,7 @@ function AppContent() {
 
       if (joinedRoomIds.length === 0) {
         setRoomList([]);
+        setRoomSummaries({});
         setRoomsLoading(false);
         return;
       }
@@ -973,6 +1030,7 @@ function AppContent() {
       console.log(`[FetchRooms] Succeeded. Loaded ${data?.length || 0} active rooms.`);
       setRoomList(data || []);
       setNetworkError(null); // Clear error on success
+      await fetchRoomSummaries((data || []).map(room => room.id));
     } catch (err) {
       console.error('[FetchRooms] Unexpected error:', err);
       handleApiError(err, '방 목록을 불러올 수 없습니다.');
@@ -3213,12 +3271,7 @@ ${inviteLink}
         </TouchableOpacity>
 
         <View style={styles.headerControls}>
-          {activeTab === 'chat' && !currentRoom && !isProfileIncomplete && (
-            <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
-              <Plus size={16} color="white" style={{ marginRight: 6 }} />
-              <Text style={styles.createBtnText}>새 약속 만들기</Text>
-            </TouchableOpacity>
-          )}
+          {/* 새 약속 만들기는 Figma `채팅방/홈` 처럼 방 목록 카드의 + 버튼으로 옮겼다 */}
 
           {/* Alarm Bell */}
           <TouchableOpacity
@@ -3780,24 +3833,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8
-  },
-  createBtn: {
-    backgroundColor: THEME.menuNeeded,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4
-  },
-  createBtnText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600'
   },
   bellBtn: {
     width: 32,
