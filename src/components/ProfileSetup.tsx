@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { SafeMapView as MapView, isGoogleMapsConfigured } from './SafeMapView';
 import { supabase } from '../lib/supabaseClient';
+import { Button } from './Button';
 import { THEME } from '../lib/theme';
 import type { PersonalData, Profile, Follow, ScheduleAvailability, PrivacySettings, Room } from '../lib/types';
 import { ScheduleGrid } from './ScheduleGrid';
@@ -1212,14 +1213,14 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 onPress={() => handleButtonDecision(false)}
                 activeOpacity={0.7}
               >
-                <X size={26} color="#EF4444" />
+                <X size={26} color={THEME.danger} />
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.gameIndicatorBox, styles.likeIndicatorBox]} 
                 onPress={() => handleButtonDecision(true)}
                 activeOpacity={0.7}
               >
-                <Heart size={24} color="#10B981" />
+                <Heart size={24} color={THEME.success} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1328,13 +1329,12 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
             </View>
 
             <View style={styles.alcoholFooter}>
-              <TouchableOpacity 
-                style={[styles.alcoholNextBtn, (!noAlcohol && selectedLiquors.length === 0) && styles.alcoholNextBtnDisabled]}
+              <Button
+                variant="completeAndNext"
+                label="다음 단계로"
                 onPress={() => setGameState('result')}
                 disabled={!noAlcohol && selectedLiquors.length === 0}
-              >
-                <Text style={styles.alcoholNextBtnText}>다음 단계로 ➜</Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         )}
@@ -1357,7 +1357,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 onPress={() => setExpandedSection(prev => prev === 'allergy' ? null : 'allergy')}
               >
                 <Text style={styles.accordionTitle}>🛡️ 식품 알레르기 여부 ({selectedAllergies.length})</Text>
-                <ChevronDown size={18} color="#64748B" />
+                <ChevronDown size={18} color={THEME.textMuted} />
               </TouchableOpacity>
               {expandedSection === 'allergy' && (
                 <View style={styles.accordionContent}>
@@ -1393,7 +1393,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 onPress={() => setExpandedSection(prev => prev === 'disease' ? null : 'disease')}
               >
                 <Text style={styles.accordionTitle}>🩺 건강상 지병 여부 ({selectedDiseases.length})</Text>
-                <ChevronDown size={18} color="#64748B" />
+                <ChevronDown size={18} color={THEME.textMuted} />
               </TouchableOpacity>
               {expandedSection === 'disease' && (
                 <View style={styles.accordionContent}>
@@ -1425,7 +1425,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 onPress={() => setExpandedSection(prev => prev === 'dislike' ? null : 'dislike')}
               >
                 <Text style={styles.accordionTitle}>🤢 못 먹는 음식 기피 ({selectedDislikes.length})</Text>
-                <ChevronDown size={18} color="#64748B" />
+                <ChevronDown size={18} color={THEME.textMuted} />
               </TouchableOpacity>
               {expandedSection === 'dislike' && (
                 <View style={styles.accordionContent}>
@@ -1453,9 +1453,9 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               <TouchableOpacity style={styles.retakeBtn} onPress={startTasteFinder} activeOpacity={0.8}>
                 <Text style={styles.retakeBtnText}>다시하기</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitBtn} onPress={saveTastePreferenceData} activeOpacity={0.8}>
-                <Text style={styles.submitBtnText}>모두 저장하기</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 2 }}>
+                <Button variant="complete" label="모두 저장하기" onPress={saveTastePreferenceData} />
+              </View>
             </View>
           </ScrollView>
         )}
@@ -1587,7 +1587,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                   onPress={() => setActiveSubTab('follows')}
                   style={styles.friendListAddBtn}
                 >
-                  <Plus size={20} color={THEME.menuNeeded} />
+                  <Plus size={20} color={THEME.primary} />
                 </TouchableOpacity>
               </View>
 
@@ -1944,8 +1944,8 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               )}
 
               {onDeleteAccount && (
-                <TouchableOpacity style={[styles.logoutBtn, { marginTop: 12, backgroundColor: '#ef444420', borderColor: '#ef4444' }]} onPress={onDeleteAccount}>
-                  <Text style={[styles.logoutBtnText, { color: '#ef4444' }]}>🗑️ 계정 삭제</Text>
+                <TouchableOpacity style={[styles.logoutBtn, { marginTop: 12, backgroundColor: THEME.danger + '20', borderColor: THEME.danger }]} onPress={onDeleteAccount}>
+                  <Text style={[styles.logoutBtnText, { color: THEME.danger }]}>🗑️ 계정 삭제</Text>
                 </TouchableOpacity>
               )}
 
@@ -2046,7 +2046,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               {/* Nickname Input */}
               <View style={styles.formGroup}>
                 <Text style={styles.label}>
-                  닉네임 <Text style={{ color: '#ef4444' }}>*</Text>
+                  닉네임 <Text style={{ color: THEME.danger }}>*</Text>
                 </Text>
                 <TextInput
                   style={styles.textInput}
@@ -2107,7 +2107,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               {/* Bank Account */}
               <View style={styles.formGroup}>
                 <Text style={styles.label}>
-                  송금 계좌 정보 <Text style={{ color: '#ef4444' }}>*</Text>
+                  송금 계좌 정보 <Text style={{ color: THEME.danger }}>*</Text>
                 </Text>
                 <View style={styles.row}>
                   <TouchableOpacity 
@@ -2209,7 +2209,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                     placeholderTextColor="#64748b"
                   />
                   <TouchableOpacity
-                    style={[styles.dropdownButton, { flex: 1, alignItems: 'center', backgroundColor: '#F4F3EA' }]}
+                    style={[styles.dropdownButton, { flex: 1, alignItems: 'center', backgroundColor: THEME.input }]}
                     onPress={() => {
                       Alert.alert(
                         '📍 출발지 좌표 지정',
@@ -2283,16 +2283,16 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 {startLocationName.trim().length > 0 && (
                   <View
                     style={{
-                      backgroundColor: startLocationVerified ? '#ECFDF5' : '#FEF3C7',
+                      backgroundColor: startLocationVerified ? THEME.success + '20' : THEME.warning + '20',
                       borderWidth: 1,
-                      borderColor: startLocationVerified ? '#6EE7B7' : '#FCD34D',
+                      borderColor: startLocationVerified ? THEME.success : THEME.warning,
                       borderRadius: 6,
                       paddingVertical: 6,
                       paddingHorizontal: 10,
                       marginBottom: 8
                     }}
                   >
-                    <Text style={{ fontSize: 11, color: startLocationVerified ? '#047857' : '#92400E' }}>
+                    <Text style={{ fontSize: 11, color: startLocationVerified ? THEME.success : THEME.warning }}>
                       {startLocationVerified
                         ? '✅ 좌표가 이 장소로 확인되었습니다.'
                         : '⚠️ 좌표 미확인 — 이대로 저장하면 이름만 저장되고 AI 추천에 내 위치가 반영되지 않습니다. 위 🔍 검색으로 골라 주세요.'}
@@ -2307,11 +2307,9 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               </View>
 
               {/* Save Profile Button */}
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-                <Text style={styles.saveButtonText}>
-                  내 프로필 저장하기 <Sparkles size={14} color="white" />
-                </Text>
-              </TouchableOpacity>
+              <View style={{ marginTop: 24 }}>
+                <Button variant="complete" label="내 프로필 저장하기 ✨" onPress={handleSaveProfile} />
+              </View>
             </View>
           )}
 
@@ -2398,11 +2396,9 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
               </View>
 
               {/* Save Profile Button */}
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-                <Text style={styles.saveButtonText}>
-                  공개 범위 설정 저장하기 <Sparkles size={14} color="white" />
-                </Text>
-              </TouchableOpacity>
+              <View style={{ marginTop: 24 }}>
+                <Button variant="complete" label="공개 범위 설정 저장하기 ✨" onPress={handleSaveProfile} />
+              </View>
             </View>
           )}
         </View>
@@ -2525,11 +2521,11 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
         transparent={false}
         onRequestClose={() => setShowMapModal(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-          <View style={{ height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', backgroundColor: '#ffffff' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1e293b' }}>🗺️ 지도에서 위치 지정</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: THEME.surface }}>
+          <View style={{ height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.border, backgroundColor: THEME.surface }}>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: THEME.text }}>🗺️ 지도에서 위치 지정</Text>
             <TouchableOpacity onPress={() => setShowMapModal(false)}>
-              <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>취소</Text>
+              <Text style={{ fontSize: 13, color: THEME.textMuted, fontWeight: '600' }}>취소</Text>
             </TouchableOpacity>
           </View>
 
@@ -2537,7 +2533,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
             {Platform.OS === 'web' ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.primary, marginBottom: 12 }}>🗺️ 웹 환경 지도 지정 안내</Text>
-                <Text style={{ fontSize: 13, color: '#475569', textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ fontSize: 13, color: THEME.textMuted, textAlign: 'center', lineHeight: 20 }}>
                   현재 크롬/엣지 등 웹 브라우저 환경에서는 모바일 전용 지도 라이브러리(react-native-maps)가 지원되지 않습니다.{"\n\n"}
                   좌표 지정 버튼의 시뮬레이션 버튼(강남역/홍대입구역)을 터치하여 지정하시거나, 모바일 기기(Expo Go)로 접속하여 실시간 지도 지정을 사용해 주세요!
                 </Text>
@@ -2582,14 +2578,14 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
                 </View>
 
                 {/* Floating Guide */}
-                <View style={{ position: 'absolute', top: 12, left: 12, right: 12, backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-                  <Text style={{ fontSize: 11, color: '#334155', fontWeight: '500' }}>지도를 쓸어 넘겨서 화면 중앙의 📍 핀에 원하는 위치를 맞춰주세요.</Text>
+                <View style={{ position: 'absolute', top: 12, left: 12, right: 12, backgroundColor: THEME.surface + 'F2', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: THEME.border, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
+                  <Text style={{ fontSize: 11, color: THEME.text, fontWeight: '500' }}>지도를 쓸어 넘겨서 화면 중앙의 📍 핀에 원하는 위치를 맞춰주세요.</Text>
                 </View>
               </>
             )}
           </View>
 
-          <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0', backgroundColor: '#f8fafc' }}>
+          <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: THEME.border, backgroundColor: THEME.surface }}>
             <View style={{ marginBottom: 12, alignItems: 'center' }}>
               <Text style={{ fontSize: 12, color: THEME.primary, fontWeight: 'bold' }}>
                 📍 화면 중앙의 핀(📍) 위치가 출발지로 지정됩니다.
@@ -2599,9 +2595,10 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
             {/* ⚠️ 지도가 안 그려지면 잠급니다. 키가 없으면 SafeMapView 가 안내 박스를
                 그리는데, 그때는 지도를 움직일 수 없어 좌표가 초기값(서울시청) 그대로입니다.
                 그 상태로 누르면 기본 좌표가 "내가 고른 위치"로 저장됩니다(AE-8 과 같은 부류). */}
-            <TouchableOpacity
-              style={{ backgroundColor: isGoogleMapsConfigured ? THEME.primary : THEME.border, paddingVertical: 12, borderRadius: 8, alignItems: 'center', shadowColor: THEME.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 2 }}
+            <Button
+              variant="complete"
               disabled={!isGoogleMapsConfigured}
+              label={isGoogleMapsConfigured ? '이 위치로 설정하기' : '지도를 쓸 수 없어 선택 불가'}
               onPress={async () => {
                 const targetCoords = currentMapCoordsRef.current;
                 if (mapTargetField === 'startLocation') {
@@ -2650,11 +2647,7 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
 
                 setShowMapModal(false);
               }}
-            >
-              <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: 'bold' }}>
-                {isGoogleMapsConfigured ? '이 위치로 설정하기' : '지도를 쓸 수 없어 선택 불가'}
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
         </SafeAreaView>
       </Modal>
@@ -3051,14 +3044,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   logoutBtn: {
-    backgroundColor: '#FF6B8B15',
+    backgroundColor: THEME.danger + '15',
     borderRadius: 24,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 12
   },
   logoutBtnText: {
-    color: '#FF6B8B',
+    color: THEME.danger,
     fontSize: 14,
     fontWeight: '700'
   },
@@ -3167,7 +3160,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   profileEditButton: {
-    backgroundColor: THEME.menuNeeded,
+    backgroundColor: THEME.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -3197,12 +3190,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   foodChip: {
-    backgroundColor: THEME.menuNeeded + '20',
+    backgroundColor: THEME.primary + '20',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: THEME.menuNeeded,
+    borderColor: THEME.primary,
   },
   foodChipText: {
     fontSize: 12,
@@ -3448,9 +3441,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   settingsMenuCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: THEME.border,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -3515,12 +3508,12 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     marginBottom: 10,
   },
   introSubtitle: {
     fontSize: 15,
-    color: '#475569',
+    color: THEME.textMuted,
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '600',
@@ -3547,8 +3540,8 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: THEME.border,
+    backgroundColor: THEME.card,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -3556,22 +3549,22 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   dislikeIndicatorBox: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
+    backgroundColor: THEME.danger + '20',
+    borderColor: THEME.danger,
   },
   likeIndicatorBox: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
+    backgroundColor: THEME.success + '20',
+    borderColor: THEME.success,
   },
   indicatorText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#64748B',
+    color: THEME.textMuted,
   },
   gameHeaderTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1E293B',
+    color: THEME.text,
     alignSelf: 'center',
     marginBottom: 20,
   },
@@ -3589,7 +3582,7 @@ const styles = StyleSheet.create({
     height: 350,
     left: 8,
     top: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderRadius: 28,
     padding: 24,
     alignItems: 'center',
@@ -3614,7 +3607,7 @@ const styles = StyleSheet.create({
   foodCardName: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     marginBottom: 14,
   },
   foodTagsRow: {
@@ -3671,12 +3664,12 @@ const styles = StyleSheet.create({
   questionTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     marginBottom: 10,
   },
   questionInstruction: {
     fontSize: 13,
-    color: '#64748B',
+    color: THEME.textMuted,
     textAlign: 'center',
     lineHeight: 18,
     fontWeight: '600',
@@ -3692,7 +3685,7 @@ const styles = StyleSheet.create({
   choiceLeft: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#EF4444',
+    color: THEME.danger,
   },
   choiceRight: {
     fontSize: 14,
@@ -3720,20 +3713,20 @@ const styles = StyleSheet.create({
   alcoholHeaderTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     textAlign: 'center',
     marginTop: 10,
   },
   alcoholSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: THEME.textMuted,
     textAlign: 'center',
     marginTop: 6,
     marginBottom: 16,
     lineHeight: 18,
   },
   liquorCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
@@ -3745,10 +3738,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: THEME.border,
   },
   liquorItemChecked: {
-    backgroundColor: 'rgba(134, 155, 96, 0.05)',
+    backgroundColor: THEME.primary + '0D',
   },
   liquorItemDisabled: {
     opacity: 0.3,
@@ -3756,7 +3749,7 @@ const styles = StyleSheet.create({
   liquorLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: THEME.textMuted,
   },
   liquorLabelChecked: {
     color: THEME.primary,
@@ -3767,39 +3760,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: THEME.surface,
     marginTop: 10,
   },
   noAlcoholToggleActive: {
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    backgroundColor: THEME.danger + '15',
   },
   noAlcoholText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#475569',
+    color: THEME.textMuted,
   },
   noAlcoholTextActive: {
-    color: '#EF4444',
+    color: THEME.danger,
   },
   alcoholFooter: {
     width: '100%',
     marginTop: 10,
-  },
-  alcoholNextBtn: {
-    width: '100%',
-    height: 50,
-    backgroundColor: THEME.primary,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alcoholNextBtnDisabled: {
-    backgroundColor: '#CBD5E1',
-  },
-  alcoholNextBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
   },
   resultContainer: {
     padding: 24,
@@ -3815,11 +3792,11 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#10B981',
+    backgroundColor: THEME.success,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#10B981',
+    shadowColor: THEME.success,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -3828,22 +3805,22 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     marginBottom: 8,
   },
   resultSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: THEME.textMuted,
     textAlign: 'center',
     lineHeight: 18,
     fontWeight: '500',
     paddingHorizontal: 10,
   },
   accordionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: THEME.border,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -3852,18 +3829,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
   },
   accordionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1E293B',
+    color: THEME.text,
   },
   accordionContent: {
     padding: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: THEME.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: THEME.border,
   },
   tagSelector: {
     flexDirection: 'row',
@@ -3873,10 +3850,10 @@ const styles = StyleSheet.create({
   tagSelectorItem: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: THEME.border,
   },
   tagSelectorItemActive: {
     backgroundColor: THEME.badgeBg,
@@ -3884,7 +3861,7 @@ const styles = StyleSheet.create({
   },
   tagSelectorText: {
     fontSize: 12,
-    color: '#64748B',
+    color: THEME.textMuted,
     fontWeight: '600',
   },
   tagSelectorTextActive: {
@@ -3898,29 +3875,16 @@ const styles = StyleSheet.create({
   },
   retakeBtn: {
     flex: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: THEME.border,
     height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   retakeBtnText: {
-    color: '#475569',
+    color: THEME.textMuted,
     fontSize: 14,
     fontWeight: '600',
-  },
-  submitBtn: {
-    flex: 2,
-    backgroundColor: THEME.primary,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  submitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
   modalDismissArea: {
     ...StyleSheet.absoluteFillObject,
@@ -3945,7 +3909,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 4,
-    borderColor: '#F8FAFC',
+    borderColor: THEME.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -3958,7 +3922,7 @@ const styles = StyleSheet.create({
   largeUserName: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#1E293B',
+    color: THEME.text,
     marginBottom: 20,
   },
   largeUserCode: {
@@ -3988,21 +3952,21 @@ const styles = StyleSheet.create({
   },
   zoomCloseBtn: {
     flex: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: THEME.border,
     height: 46,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   zoomCloseBtnText: {
-    color: '#475569',
+    color: THEME.textMuted,
     fontSize: 13,
     fontWeight: '700',
   },
 
   // Tutorial checklist card
   tutorialCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
@@ -4024,7 +3988,7 @@ const styles = StyleSheet.create({
   tutorialTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1E293B',
+    color: THEME.text,
   },
   tutorialCount: {
     fontSize: 13,
@@ -4033,7 +3997,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: THEME.border,
     borderRadius: 3,
     marginBottom: 20,
     overflow: 'hidden',
@@ -4049,7 +4013,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: THEME.border,
   },
   tutorialItemLeft: {
     flexDirection: 'row',
@@ -4062,7 +4026,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
+    borderColor: THEME.border,
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -4077,11 +4041,11 @@ const styles = StyleSheet.create({
   tutorialItemName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1E293B',
+    color: THEME.text,
   },
   tutorialItemDesc: {
     fontSize: 11,
-    color: '#64748B',
+    color: THEME.textMuted,
     marginTop: 2,
   },
   tutorialBtn: {
@@ -4091,7 +4055,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tutorialBtnDone: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: THEME.border,
   },
   tutorialBtnText: {
     color: '#FFFFFF',
@@ -4099,13 +4063,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tutorialBtnTextDone: {
-    color: '#94A3B8',
+    color: THEME.textMuted,
   },
 
   // Emojis and background color edit customizer
   pickerSection: {
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: THEME.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -4126,7 +4090,7 @@ const styles = StyleSheet.create({
   subSectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: THEME.textMuted,
     alignSelf: 'flex-start',
     marginBottom: 6,
     marginTop: 8,
@@ -4143,9 +4107,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: THEME.card,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: THEME.border,
   },
   emojiPickItemActive: {
     borderColor: THEME.primary,
@@ -4169,7 +4133,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   colorPickItemActive: {
-    borderColor: '#1E293B',
+    borderColor: THEME.text,
     borderWidth: 2,
   }
 });
