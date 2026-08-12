@@ -12,7 +12,7 @@ import {
   ScrollView
 } from 'react-native';
 import { MealChatLogo } from './MealChatLogo';
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react-native';
+import { Button } from './Button';
 import { supabase } from '../lib/supabaseClient';
 import { THEME } from '../lib/theme';
 
@@ -67,84 +67,84 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          {/* Logo / Header */}
-          <View style={styles.header}>
-            <MealChatLogo size={80} />
-            <Text style={styles.logoText}>밀챗</Text>
-            <Text style={styles.subtitle}>
-              {isSignUp ? '간편 회원가입으로 일정 조율 시작하기' : '로그인하여 친구들과 밀챗을 맞춰 보세요'}
-            </Text>
-          </View>
-
-          {/* Form */}
-          <View style={styles.form}>
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>이메일 주소</Text>
-              <View style={styles.inputWrapper}>
-                <Mail size={16} color="#64748b" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.textInput}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="example@email.com"
-                  placeholderTextColor="#64748b"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>비밀번호 (6자리 이상)</Text>
-              <View style={styles.inputWrapper}>
-                <Lock size={16} color="#64748b" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.textInput}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor="#64748b"
-                  secureTextEntry={true}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
-
-            {/* Submit Button */}
+        {/* 상단 제목 — Figma `Onboarding/Login`(150:124) */}
+        <View style={styles.topBar}>
+          {isSignUp ? (
             <TouchableOpacity
-              style={[styles.submitButton, isSignUp ? styles.signUpBtn : styles.signInBtn]}
-              onPress={handleAuth}
+              style={styles.backButton}
+              onPress={() => setIsSignUp(false)}
               disabled={loading}
+              accessibilityLabel="로그인으로"
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <View style={styles.buttonRow}>
-                  {isSignUp ? <UserPlus size={16} color="white" /> : <LogIn size={16} color="white" />}
-                  <Text style={styles.submitButtonText}>
-                    {isSignUp ? ' 회원가입 및 시작하기' : ' 로그인하기'}
-                  </Text>
-                </View>
-              )}
+              <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
+          ) : (
+            <View style={styles.backSpacer} />
+          )}
+          <Text style={styles.screenTitle}>{isSignUp ? '회원가입' : '로그인'}</Text>
+        </View>
+
+        {/* 브랜드 */}
+        <View style={styles.brand}>
+          <MealChatLogo size={56} />
+          <Text style={styles.wordmark}>mealchat</Text>
+          <Text style={styles.greeting}>
+            {isSignUp ? '몇 가지만 적으면 바로 시작해요' : '다시 오셨네요, 반가워요!'}
+          </Text>
+        </View>
+
+        {/* 입력 */}
+        <View style={styles.form}>
+          <View style={styles.field}>
+            <Text style={styles.label}>아이디</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@email.com"
+              placeholderTextColor={THEME.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </View>
 
-          {/* Switch Tab Link */}
-          <TouchableOpacity
-            style={styles.switchLink}
-            onPress={() => setIsSignUp(!isSignUp)}
-            disabled={loading}
-          >
-            <Text style={styles.switchLinkText}>
-              {isSignUp ? '이미 계정이 있으신가요? 로그인하기' : '계정이 없으신가요? 회원가입하기'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.field}>
+            <Text style={styles.label}>비밀번호</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="6자리 이상"
+              placeholderTextColor={THEME.textTertiary}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingButton}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            </View>
+          ) : (
+            <Button
+              variant="accent"
+              label={isSignUp ? '회원가입' : '로그인'}
+              onPress={handleAuth}
+            />
+          )}
         </View>
+
+        {/* 전환 / 도움말 */}
+        <TouchableOpacity style={styles.switchLink} onPress={() => setIsSignUp(!isSignUp)} disabled={loading}>
+          <Text style={styles.switchText}>
+            {isSignUp ? '이미 계정이 있나요?' : '아직 계정이 없나요?'}{'  '}
+            <Text style={styles.switchAccent}>{isSignUp ? '로그인' : '회원가입'}</Text>
+          </Text>
+        </TouchableOpacity>
+
+        {!isSignUp && <Text style={styles.helpText}>아이디 비밀번호 찾기</Text>}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -153,111 +153,110 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
-    justifyContent: 'center'
+    backgroundColor: THEME.surface,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
   },
-  card: {
-    backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16
-  },
-  header: {
+  topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28
+    gap: 12,
   },
-  logoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: THEME.primary,
+  backButton: {
+    width: 28,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: THEME.card,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  logoText: {
-    fontSize: 22,
+  backButtonText: {
+    fontSize: 14,
+    color: THEME.textSecondary,
+  },
+  backSpacer: {
+    width: 28,
+  },
+  screenTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: THEME.text,
-    letterSpacing: -0.5
   },
-  subtitle: {
-    fontSize: 12,
-    color: THEME.textMuted,
-    textAlign: 'center',
+  brand: {
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 44,
+    paddingBottom: 28,
+  },
+  wordmark: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: THEME.accentSoft,
     marginTop: 6,
-    lineHeight: 18
+  },
+  greeting: {
+    fontSize: 12,
+    color: THEME.unitMuted,
+    marginTop: 2,
   },
   form: {
-    gap: 16
+    gap: 14,
   },
-  inputGroup: {
-    marginBottom: 12
+  field: {
+    gap: 6,
   },
   label: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.textMuted,
-    marginBottom: 6
+    color: THEME.labelMuted,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.input,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 10,
-    paddingHorizontal: 12
-  },
-  inputIcon: {
-    marginRight: 8
-  },
-  textInput: {
-    flex: 1,
+  input: {
+    height: 44,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    backgroundColor: THEME.card,
     color: THEME.text,
-    paddingVertical: 12,
-    fontSize: 14
+    fontSize: 13,
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  submitButton: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12
-  },
-  signInBtn: {
-    backgroundColor: THEME.primary
-  },
-  signUpBtn: {
-    backgroundColor: THEME.primaryPressed
-  },
-  buttonRow: {
-    flexDirection: 'row',
+  loadingButton: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: THEME.accentGradientStart,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold'
   },
   switchLink: {
     alignItems: 'center',
-    marginTop: 20
+    paddingTop: 22,
   },
-  switchLinkText: {
-    color: THEME.textMuted,
+  switchText: {
     fontSize: 12,
-    textDecorationLine: 'underline'
-  }
+    color: THEME.labelMuted,
+  },
+  switchAccent: {
+    fontWeight: 'bold',
+    color: THEME.accentSoft,
+  },
+  helpText: {
+    fontSize: 12,
+    color: THEME.labelMuted,
+    textAlign: 'center',
+    paddingTop: 12,
+  },
 });
+
+export default AuthScreen;
