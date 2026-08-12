@@ -26,6 +26,29 @@ import type { PersonalData, Profile, Follow, ScheduleAvailability, PrivacySettin
 import { ScheduleGrid } from './ScheduleGrid';
 import { POPULAR_FOODS, FoodItem } from '../constants/foodData';
 import { formatBirthdate } from '../lib/personalDataUtils';
+import type { PrivacyLevel } from '../lib/types';
+
+/**
+ * Figma `프로필/정보 공개 범위`(256:2494) 는 on/off 토글이지만, 이 앱의 공개
+ * 범위는 `공개 / 친구 / 비공개` 3단계이고 App.tsx 의 isFieldVisible 이 실제로
+ * 그 값을 읽는다. 단계를 줄이면 "친한 친구에게만" 이 사라지므로 3단계를 유지하고
+ * Figma 의 카드/행 구조만 가져왔다.
+ */
+const PRIVACY_LEVELS: { value: PrivacyLevel; label: string }[] = [
+  { value: 'public', label: '공개' },
+  { value: 'best', label: '친구' },
+  { value: 'private', label: '비공개' },
+];
+
+const PRIVACY_BASIC_FIELDS = [
+  { key: 'birthdate' as const, label: '생년월일' },
+  { key: 'gender' as const, label: '성별' },
+  { key: 'bio' as const, label: '한마디 멘트' },
+];
+
+const PRIVACY_SENSITIVE_FIELDS = [
+  { key: 'bank_account' as const, label: '계좌번호', hint: '정산할 때만 쓰여요' },
+];
 import { optimizeImage } from '../lib/imageOptimizer';
 import {
   ALLERGY_PRESETS,
@@ -138,13 +161,16 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'follows' | 'settings'>('settings');
   const [activeSettingSection, setActiveSettingSection] = useState<'profile' | 'schedule' | 'privacy' | null>(null);
 
-  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(
-    initialData?.privacy_settings || {
-      birthdate: 'public',
-      gender: 'public',
-      bank_account: 'private',
-    }
-  );
+  // bio 는 나중에 추가된 항목이라 기존 프로필에는 값이 없다. isFieldVisible 은
+  // 값이 없으면 공개로 보므로, 화면에서도 '공개' 가 골라진 상태로 시작해야
+  // 실제 동작과 어긋나지 않는다.
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
+    birthdate: 'public',
+    gender: 'public',
+    bank_account: 'private',
+    bio: 'public',
+    ...(initialData?.privacy_settings || {}),
+  });
 
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
@@ -617,9 +643,10 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
       setStartLatitude(initialData.start_latitude || 37.5665);
       setStartLongitude(initialData.start_longitude || 126.9780);
 
-      // Load privacy settings if available
+      // Load privacy settings if available.
+      // 나중에 생긴 항목(bio)은 저장된 값에 없을 수 있으므로 기본값 위에 덮는다.
       if (initialData.privacy_settings) {
-        setPrivacySettings(initialData.privacy_settings);
+        setPrivacySettings({ bio: 'public', ...initialData.privacy_settings });
       }
       
       const bankAcct = initialData.personal_data?.bank_account || '';
@@ -1165,6 +1192,13 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
   const completedStepCount =
     (hasProfileEmoji ? 1 : 0) + (hasStartLocation ? 1 : 0) + (hasFoodTaste ? 1 : 0);
   const progressWidth: `${number}%` = `${(completedStepCount / ACCOUNT_STEP_TOTAL) * 100}%`;
+
+  // 공개 범위 행에 지금 값이 무엇인지 함께 보여준다 (Figma 256:2505 등)
+  const privacyPreview: Record<'birthdate' | 'gender' | 'bio', string> = {
+    birthdate: formatBirthdate(birthdate),
+    gender: gender === 'male' ? '남성' : gender === 'female' ? '여성' : '아직 설정 안됨',
+    bio: bio || '아직 설정 안됨',
+  };
 
   if (view === 'food_taste') {
     return (
@@ -2422,60 +2456,103 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
           )}
 
           {activeSettingSection === 'privacy' && (
-            <View>
+            <View style={styles.privacyBody}>
               <TouchableOpacity
-                style={[styles.settingsBackButton, { marginBottom: 16 }]}
+                style={styles.privacyBack}
                 onPress={() => setActiveSettingSection(null)}
               >
-                <Text style={styles.settingsBackButtonText}>◀ 뒤로 가기</Text>
+                <Text style={styles.privacyBackText}>◀ 뒤로 가기</Text>
               </TouchableOpacity>
 
-              {/* Privacy Settings */}
-              <View style={styles.privacySection}>
-                <Text style={styles.privacySectionTitle}>🔒 정보 공개 범위 설정</Text>
+              <Text style={styles.privacyTitle}>정보 공개 범위</Text>
+              <Text style={styles.privacySubtitle}>밥약 메이트에게 보여줄 정보를 선택하세요</Text>
 
-                {(['birthdate', 'gender', 'bank_account'] as const).map(key => {
-                  const labels: { [K in typeof key]: string } = {
-                    birthdate: '생년월일',
-                    gender: '성별',
-                    bank_account: '계좌번호'
-                  };
-
-                  return (
-                    <View key={key} style={styles.privacyItem}>
-                      <Text style={styles.privacyLabel}>{labels[key]}</Text>
-                      <View style={styles.privacyButtonRow}>
-                        {(['public', 'best', 'private'] as const).map(level => (
-                          <TouchableOpacity
-                            key={level}
-                            style={[
-                              styles.privacyBtn,
-                              privacySettings[key] === level && styles.privacyBtnActive
-                            ]}
-                            onPress={() => setPrivacySettings({
-                              ...privacySettings,
-                              [key]: level
-                            })}
-                          >
-                            <Text style={[
-                              styles.privacyBtnText,
-                              privacySettings[key] === level && styles.privacyBtnTextActive
-                            ]}>
-                              {level === 'public' ? '👥 공개' : level === 'best' ? '⭐ 친구' : '🔒 비공개'}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
+              <View style={styles.privacyCard}>
+                <Text style={styles.privacyCardTitle}>기본 정보</Text>
+                {PRIVACY_BASIC_FIELDS.map((field, index) => (
+                  <View key={field.key}>
+                    {index > 0 && <View style={styles.privacyDivider} />}
+                    <View style={styles.privacyRow}>
+                      <View style={styles.privacyRowText}>
+                        <Text style={styles.privacyRowLabel}>{field.label}</Text>
+                        <Text style={styles.privacyRowValue} numberOfLines={1}>
+                          {privacyPreview[field.key]}
+                        </Text>
+                      </View>
+                      <View style={styles.privacyLevels}>
+                        {PRIVACY_LEVELS.map(level => {
+                          const selected = privacySettings[field.key] === level.value;
+                          return (
+                            <TouchableOpacity
+                              key={level.value}
+                              style={[styles.privacyLevel, selected && styles.privacyLevelActive]}
+                              onPress={() =>
+                                setPrivacySettings({ ...privacySettings, [field.key]: level.value })
+                              }
+                            >
+                              <Text
+                                style={[
+                                  styles.privacyLevelText,
+                                  selected && styles.privacyLevelTextActive,
+                                ]}
+                              >
+                                {level.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     </View>
-                  );
-                })}
+                  </View>
+                ))}
               </View>
 
-              {/* Save Profile Button */}
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-                <Text style={styles.saveButtonText}>
-                  공개 범위 설정 저장하기 <Sparkles size={14} color="white" />
-                </Text>
+              <View style={styles.privacyCard}>
+                <Text style={[styles.privacyCardTitle, styles.privacyCardTitleDanger]}>민감 정보</Text>
+                {PRIVACY_SENSITIVE_FIELDS.map((field, index) => (
+                  <View key={field.key}>
+                    {index > 0 && <View style={styles.privacyDivider} />}
+                    <View style={styles.privacyRow}>
+                      <View style={styles.privacyRowText}>
+                        <Text style={styles.privacyRowLabel}>{field.label}</Text>
+                        <Text style={styles.privacyRowValue} numberOfLines={1}>
+                          {field.hint}
+                        </Text>
+                      </View>
+                      <View style={styles.privacyLevels}>
+                        {PRIVACY_LEVELS.map(level => {
+                          const selected = privacySettings[field.key] === level.value;
+                          return (
+                            <TouchableOpacity
+                              key={level.value}
+                              style={[styles.privacyLevel, selected && styles.privacyLevelActive]}
+                              onPress={() =>
+                                setPrivacySettings({ ...privacySettings, [field.key]: level.value })
+                              }
+                            >
+                              <Text
+                                style={[
+                                  styles.privacyLevelText,
+                                  selected && styles.privacyLevelTextActive,
+                                ]}
+                              >
+                                {level.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.privacyNote}>
+                <Text style={styles.privacyNoteText}>🔒  비공개로 둔 정보는 방장에게도 보이지 않아요</Text>
+              </View>
+
+              <TouchableOpacity style={styles.privacySave} onPress={handleSaveProfile}>
+                <Text style={styles.privacySaveText}>저장하기</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2738,6 +2815,119 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
 });
 
 const styles = StyleSheet.create({
+  // ── Figma `프로필/정보 공개 범위`(256:2494) ──
+  privacyBody: {
+    gap: 8,
+    paddingVertical: 12,
+  },
+  privacyBack: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+  },
+  privacyBackText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+  privacyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  privacySubtitle: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    marginBottom: 4,
+  },
+  privacyCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  privacyCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 4,
+  },
+  privacyCardTitleDanger: {
+    color: THEME.danger,
+  },
+  privacyDivider: {
+    height: 1,
+    backgroundColor: THEME.border,
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+  },
+  privacyRowText: {
+    flex: 1,
+    gap: 2,
+  },
+  privacyRowLabel: {
+    fontSize: 13,
+    color: THEME.text,
+  },
+  privacyRowValue: {
+    fontSize: 11,
+    color: THEME.textMuted,
+  },
+  privacyLevels: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    backgroundColor: THEME.surface,
+    padding: 2,
+    gap: 2,
+  },
+  privacyLevel: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  privacyLevelActive: {
+    backgroundColor: THEME.primary,
+  },
+  privacyLevelText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: THEME.textMuted,
+  },
+  privacyLevelTextActive: {
+    color: '#FFFFFF',
+  },
+  privacyNote: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: THEME.badgeBg,
+  },
+  privacyNoteText: {
+    fontSize: 11,
+    color: THEME.accentSoft,
+  },
+  privacySave: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  privacySaveText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
   // ── Figma `프로필/프로필 홈`(159:544) ──
   homeBody: {
     gap: 10,

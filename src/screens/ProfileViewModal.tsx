@@ -64,7 +64,7 @@ const ProfileViewModal: React.FC<ProfileViewModalProps> = ({
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: THEME.text, marginTop: 8 }}>
                   {selectedProfile.name}
                 </Text>
-                {selectedProfile.personal_data?.bio && (
+                {isFieldVisible('bio', selectedProfile) && selectedProfile.personal_data?.bio && (
                   <Text style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4, textAlign: 'center' }}>
                     {selectedProfile.personal_data.bio}
                   </Text>
