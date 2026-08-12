@@ -1,25 +1,27 @@
 export const themeColors = {
   light: {
-    background: '#FAFAFB',
-    primary: '#23A455', // MealChat Green
-    primaryPressed: '#1E8E49',
+    background: '#E6E6E6', // Figma redesign background
+    primary: '#FF9900', // MealChat Orange (Figma redesign)
+    primaryPressed: '#E68A00',
+    accentGradientStart: '#F66F3E', // Figma Accent button gradient
+    accentGradientEnd: '#F6C53E',
     secondary: '#00A3FF', // MealChat Sky Blue
-    accent: '#FF7A00', // MealChat Orange
-    surface: '#FFFFFF',
+    accent: '#FF7A00', // MealChat Orange (legacy accent, kept for existing screens)
+    surface: '#F3F3F3', // Figma redesign surface
     surfaceDarker: '#E5E7EB',
-    text: '#333333',
-    textMuted: '#8E8E93',
-    textTertiary: '#999999',
-    border: '#E5E7EB',
+    text: '#000000', // Figma redesign text
+    textMuted: '#9C9C9C', // Figma redesign muted text
+    textTertiary: '#B4B2A8', // Figma redesign tertiary text
+    border: '#E6E6E6', // Figma redesign border
     input: '#FFFFFF',
-    danger: '#FF6B8B',
+    danger: '#F53942', // Figma redesign danger
     success: '#27AE60',
     warning: '#FFD600', // MealChat Yellow
     card: '#FFFFFF',
-    cardBorder: '#E5E7EB',
+    cardBorder: '#E6E6E6', // Figma redesign card border
     avatarBg: '#E5E7EB',
     modalOverlay: 'rgba(51, 51, 51, 0.4)',
-    badgeBg: 'rgba(35, 164, 85, 0.08)',
+    badgeBg: '#F7EFE6', // Figma redesign icon tint background
     // UI 설계 색상
     menuNeeded: '#FF8C42',
     menuComplete: '#4ECDC4',
