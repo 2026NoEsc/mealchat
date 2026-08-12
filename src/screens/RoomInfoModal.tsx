@@ -631,7 +631,6 @@ const styles = StyleSheet.create({
   },
   leaveButton: {
     marginTop: 6,
-    height: 44,
   },
 });
 
