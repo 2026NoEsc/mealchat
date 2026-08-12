@@ -141,3 +141,18 @@ export const normalizeAllergies = (values: string[] | undefined): string[] =>
 /** 지병 값을 id 형식으로 정규화합니다. */
 export const normalizeHealthIssues = (values: string[] | undefined): string[] =>
   normalize(values, HEALTH_LOOKUP);
+
+/**
+ * 저장된 생년월일을 Figma `프로필/프로필 홈` 표기로 바꾼다.
+ *
+ * 값은 "20021220" 처럼 구분자 없이 저장돼 있어 그대로 보여주면 날짜로 읽히지
+ * 않는다. 8자리가 아니면 손대지 않고 그대로 돌려준다.
+ */
+export const formatBirthdate = (birthdate?: string): string => {
+  const digits = (birthdate || '').replace(/[^0-9]/g, '');
+  if (digits.length !== 8) return birthdate || '아직 설정 안됨';
+  const year = digits.slice(0, 4);
+  const month = String(Number(digits.slice(4, 6)));
+  const day = String(Number(digits.slice(6, 8)));
+  return `${year}년 ${month}월 ${day}일`;
+};

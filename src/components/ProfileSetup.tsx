@@ -26,6 +26,7 @@ import { THEME } from '../lib/theme';
 import type { PersonalData, Profile, Follow, ScheduleAvailability, PrivacySettings, Room } from '../lib/types';
 import { ScheduleGrid } from './ScheduleGrid';
 import { POPULAR_FOODS, FoodItem } from '../constants/foodData';
+import { formatBirthdate } from '../lib/personalDataUtils';
 import { optimizeImage } from '../lib/imageOptimizer';
 import {
   ALLERGY_PRESETS,
@@ -1153,6 +1154,19 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
   if (hasCompletedFoodTasteTutorial) tutorialScore++;
   const tutorialProgress = (tutorialScore / 3) * 100;
 
+  // ── Figma `프로필/프로필 홈`(159:544) 이 쓰는 파생값 ──
+  // "계정 완성하기" 3단계는 실제 입력 여부로 판단한다. 튜토리얼 플래그
+  // (hasCompleted*Tutorial)는 안내를 봤는지일 뿐 값이 채워졌다는 뜻이 아니다.
+  const ACCOUNT_STEP_TOTAL = 3;
+  const hasProfileEmoji = Boolean(avatarUrl) || profileEmoji !== '🦁';
+  const hasStartLocation = Boolean(startLocationName);
+  const hasFoodTaste = Boolean(
+    foodTasteScores || (initialData?.personal_data?.preferredFoods || []).length > 0
+  );
+  const completedStepCount =
+    (hasProfileEmoji ? 1 : 0) + (hasStartLocation ? 1 : 0) + (hasFoodTaste ? 1 : 0);
+  const progressWidth: `${number}%` = `${(completedStepCount / ACCOUNT_STEP_TOTAL) * 100}%`;
+
   if (view === 'food_taste') {
     return (
       <View style={styles.gameContainer}>
@@ -1472,29 +1486,9 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
           </Text>
         </View>
       )}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text style={[styles.title, { marginBottom: 0 }]}>
-          <User size={20} color={THEME.primary} /> 설정
-        </Text>
-        {onClose && (
-          <TouchableOpacity 
-            style={{
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 16,
-              backgroundColor: '#f1f5f9',
-              borderWidth: 1,
-              borderColor: THEME.border,
-              flexDirection: 'row',
-              alignItems: 'center'
-            }}
-            onPress={onClose}
-          >
-            <X size={14} color="#64748b" style={{ marginRight: 4 }} />
-            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748b' }}>설정 닫기</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Figma `프로필/프로필 홈` 에는 화면 제목이 없다 — AppHeader 아래 바로 본문이다.
+          "설정 닫기" 버튼도 뺐다. 프로필이 모달이 아니라 탭이 되면서 onClose 가
+          더 이상 넘어오지 않아 죽은 버튼이었다. */}
 
       {activeSubTab === 'profile' && (
         <View>
@@ -1880,80 +1874,160 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
       {activeSubTab === 'settings' && (
         <View>
           {activeSettingSection === null && (
-            <View style={{ gap: 12, paddingVertical: 12 }}>
+            <View style={styles.homeBody}>
+              {/* 프로필 요약 — Figma 159:548 */}
               <TouchableOpacity
-                style={styles.settingsMenuCard}
+                style={styles.homeCard}
+                activeOpacity={0.8}
                 onPress={() => setActiveSubTab('profile')}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsMenuCardText}>👤 내 프로필 확인하기</Text>
-                  <Text style={styles.settingsMenuCardSub}>나의 기본 정보와 음식 취향 확인</Text>
+                <View style={styles.homeProfileHead}>
+                  <View style={styles.homeAvatar}>
+                    {avatarUrl ? (
+                      <Image source={{ uri: avatarUrl }} style={styles.homeAvatarImage} />
+                    ) : (
+                      <Text style={styles.homeAvatarEmoji}>{profileEmoji}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.homeName}>
+                    {name || '이름 미설정'}{tag ? '#' + tag : ''}
+                  </Text>
+                  <Text style={styles.homeBio}>
+                    {bio ? '“' + bio + '”' : '한마디 멘트를 남겨보세요'}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: 16, color: THEME.textMuted }}>➜</Text>
+
+                <View style={styles.homeInfoRow}>
+                  <Text style={styles.homeInfoLabel}>생년월일</Text>
+                  <Text style={styles.homeInfoValue}>{formatBirthdate(birthdate)}</Text>
+                </View>
+                <View style={styles.homeInfoRow}>
+                  <Text style={styles.homeInfoLabel}>성별</Text>
+                  <Text style={styles.homeInfoValue}>{gender === 'male' ? '남성' : gender === 'female' ? '여성' : '아직 설정 안됨'}</Text>
+                </View>
+                <View style={styles.homeInfoRow}>
+                  <Text style={styles.homeInfoLabel}>송금 계좌</Text>
+                  <Text style={styles.homeInfoValue}>
+                    {accountNumber ? bankName + ' ' + accountNumber : '아직 설정 안됨'}
+                  </Text>
+                </View>
+                <View style={styles.homeInfoRow}>
+                  <Text style={styles.homeInfoLabel}>음식 취향</Text>
+                  <Text style={[styles.homeInfoValue, !hasFoodTaste && styles.homeInfoValueMissing]}>
+                    {hasFoodTaste ? '설정 완료' : '아직 설정 안됨'}
+                  </Text>
+                </View>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.settingsMenuCard}
-                onPress={() => setActiveSettingSection('profile')}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsMenuCardText}>✏️ 프로필 수정하기</Text>
-                  <Text style={styles.settingsMenuCardSub}>이름, 생년월일, 은행 계좌 설정</Text>
+              {/* 계정 완성하기 — Figma 159:566 */}
+              <View style={styles.homeCard}>
+                <View style={styles.homeCardHeader}>
+                  <Text style={styles.homeCardTitle}>🎉 계정 완성하기</Text>
+                  <Text style={styles.homeCardStep}>
+                    {completedStepCount} / {ACCOUNT_STEP_TOTAL} 단계
+                  </Text>
                 </View>
-                <Text style={{ fontSize: 16, color: THEME.textMuted }}>➜</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.settingsMenuCard}
-                onPress={() => setActiveSettingSection('schedule')}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsMenuCardText}>📅 7일간 일정 입력하기</Text>
-                  <Text style={styles.settingsMenuCardSub}>일주일 단위의 나의 기본 바쁜 시간표 입력</Text>
+                <View style={styles.homeProgressTrack}>
+                  <View style={[styles.homeProgressFill, { width: progressWidth }]} />
                 </View>
-                <Text style={{ fontSize: 16, color: THEME.textMuted }}>➜</Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.settingsMenuCard}
-                onPress={() => setActiveSubTab('follows')}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsMenuCardText}>👥 내 메이트 관리 (팔로우 목록)</Text>
-                  <Text style={styles.settingsMenuCardSub}>친구 추가/삭제 및 친한 친구 설정</Text>
+                <View style={styles.homeStepRow}>
+                  <Text style={hasProfileEmoji ? styles.homeStepDone : styles.homeStepTodo}>
+                    {hasProfileEmoji ? '✓' : '○'}
+                  </Text>
+                  <Text style={styles.homeStepLabel}>프로필 이모지 수정</Text>
+                  {hasProfileEmoji ? (
+                    <View style={styles.homeStepBadgeDone}>
+                      <Text style={styles.homeStepBadgeDoneText}>완료됨</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.homeStepBadge}
+                      onPress={() => setActiveSettingSection('profile')}
+                    >
+                      <Text style={styles.homeStepBadgeText}>수정하기</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <Text style={{ fontSize: 16, color: THEME.textMuted }}>➜</Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.settingsMenuCard}
-                onPress={() => setActiveSettingSection('privacy')}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsMenuCardText}>🔒 정보 공개 범위 설정</Text>
-                  <Text style={styles.settingsMenuCardSub}>생년월일, 성별, 계좌번호 공개 설정</Text>
+                <View style={styles.homeStepRow}>
+                  <Text style={hasStartLocation ? styles.homeStepDone : styles.homeStepTodo}>
+                    {hasStartLocation ? '✓' : '○'}
+                  </Text>
+                  <Text style={styles.homeStepLabel}>사는 곳 설정</Text>
+                  {hasStartLocation ? (
+                    <View style={styles.homeStepBadgeDone}>
+                      <Text style={styles.homeStepBadgeDoneText}>완료됨</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.homeStepBadge}
+                      onPress={() => setActiveSettingSection('profile')}
+                    >
+                      <Text style={styles.homeStepBadgeText}>설정하기</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <Text style={{ fontSize: 16, color: THEME.textMuted }}>➜</Text>
-              </TouchableOpacity>
 
-              {/* 계정 관리 버튼들 */}
-              {onExportData && (
-                <TouchableOpacity style={[styles.logoutBtn, { marginTop: 24, backgroundColor: '#2563eb20', borderColor: '#2563eb' }]} onPress={onExportData}>
-                  <Text style={[styles.logoutBtnText, { color: '#2563eb' }]}>📊 데이터 내보내기</Text>
+                <View style={styles.homeStepRow}>
+                  <Text style={hasFoodTaste ? styles.homeStepDone : styles.homeStepTodo}>
+                    {hasFoodTaste ? '✓' : '○'}
+                  </Text>
+                  <Text style={styles.homeStepLabel}>음식 취향 매칭</Text>
+                  <TouchableOpacity style={styles.homeStepBadge} onPress={startTasteFinder}>
+                    <Text style={styles.homeStepBadgeText}>
+                      {hasFoodTaste ? '다시 하기' : '게임 시작'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* 이동 메뉴 — Figma 159:587 */}
+              <View style={styles.homeCard}>
+                <TouchableOpacity
+                  style={styles.homeLinkRow}
+                  onPress={() => setActiveSettingSection('schedule')}
+                >
+                  <Text style={styles.homeLinkLabel}>일정 입력하기</Text>
+                  <Text style={styles.homeLinkArrow}>→</Text>
                 </TouchableOpacity>
-              )}
-
-              {onDeleteAccount && (
-                <TouchableOpacity style={[styles.logoutBtn, { marginTop: 12, backgroundColor: THEME.danger + '20', borderColor: THEME.danger }]} onPress={onDeleteAccount}>
-                  <Text style={[styles.logoutBtnText, { color: THEME.danger }]}>🗑️ 계정 삭제</Text>
+                <View style={styles.homeLinkDivider} />
+                <TouchableOpacity style={styles.homeLinkRow} onPress={() => setActiveSubTab('follows')}>
+                  <Text style={styles.homeLinkLabel}>내 친구 관리</Text>
+                  <Text style={styles.homeLinkArrow}>→</Text>
                 </TouchableOpacity>
-              )}
-
-              {onLogout && (
-                <TouchableOpacity style={[styles.logoutBtn, { marginTop: 12 }]} onPress={onLogout}>
-                  <Text style={styles.logoutBtnText}>로그아웃하기</Text>
+                <View style={styles.homeLinkDivider} />
+                <TouchableOpacity
+                  style={styles.homeLinkRow}
+                  onPress={() => setActiveSettingSection('privacy')}
+                >
+                  <Text style={styles.homeLinkLabel}>정보 공개 범위 설정</Text>
+                  <Text style={styles.homeLinkArrow}>→</Text>
                 </TouchableOpacity>
-              )}
+                {onExportData && (
+                  <>
+                    <View style={styles.homeLinkDivider} />
+                    <TouchableOpacity style={styles.homeLinkRow} onPress={onExportData}>
+                      <Text style={styles.homeLinkLabel}>데이터 내보내기</Text>
+                      <Text style={styles.homeLinkArrow}>→</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+
+              {/* 로그아웃 / 계정 삭제 — Figma 159:599 */}
+              <View style={styles.homeFooter}>
+                {onLogout && (
+                  <TouchableOpacity onPress={onLogout}>
+                    <Text style={styles.homeFooterLogout}>로그아웃</Text>
+                  </TouchableOpacity>
+                )}
+                {onDeleteAccount && (
+                  <TouchableOpacity onPress={onDeleteAccount}>
+                    <Text style={styles.homeFooterDanger}>계정 삭제</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
 
@@ -2657,6 +2731,176 @@ export const ProfileSetup = forwardRef<any, ProfileSetupProps>(({
 });
 
 const styles = StyleSheet.create({
+  // ── Figma `프로필/프로필 홈`(159:544) ──
+  homeBody: {
+    gap: 10,
+    paddingVertical: 12,
+  },
+  homeCard: {
+    backgroundColor: THEME.surface,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  homeProfileHead: {
+    alignItems: 'center',
+    gap: 3,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  homeAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: THEME.badgeBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  homeAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  homeAvatarEmoji: {
+    fontSize: 30,
+  },
+  homeName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  homeBio: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  homeInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 3,
+    gap: 12,
+  },
+  homeInfoLabel: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  homeInfoValue: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.text,
+    textAlign: 'right',
+  },
+  homeInfoValueMissing: {
+    color: THEME.danger,
+  },
+  homeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  homeCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  homeCardStep: {
+    fontSize: 11,
+    color: THEME.textMuted,
+  },
+  homeProgressTrack: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: THEME.border,
+    overflow: 'hidden',
+    marginTop: 2,
+  },
+  homeProgressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: THEME.primary,
+  },
+  homeStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  homeStepDone: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.primary,
+  },
+  homeStepTodo: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.textTertiary,
+  },
+  homeStepLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: THEME.text,
+  },
+  homeStepBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: THEME.badgeBg,
+  },
+  homeStepBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.accentSoft,
+  },
+  homeStepBadgeDone: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: THEME.border,
+  },
+  homeStepBadgeDoneText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.textMuted,
+  },
+  homeLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  homeLinkLabel: {
+    fontSize: 13,
+    color: THEME.text,
+  },
+  homeLinkArrow: {
+    fontSize: 13,
+    color: THEME.textTertiary,
+  },
+  homeLinkDivider: {
+    height: 1,
+    backgroundColor: THEME.border,
+  },
+  homeFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingTop: 4,
+  },
+  homeFooterLogout: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  homeFooterDanger: {
+    fontSize: 12,
+    color: THEME.danger,
+  },
   container: {
     padding: 16,
     paddingBottom: 40,
