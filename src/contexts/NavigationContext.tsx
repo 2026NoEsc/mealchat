@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import type { BottomNavTabKey } from '../components/BottomNav';
+
+// 탭 키는 `BottomNav` 를 단일 출처로 삼는다 — 하단 탭바와 라우팅이 어긋나지 않게.
+export type AppTab = BottomNavTabKey;
 
 interface NavigationContextType {
-  activeTab: 'schedule' | 'addons';
+  activeTab: AppTab;
   showCreateModal: boolean;
   showNotifications: boolean;
   showRoomInfoModal: boolean;
@@ -10,7 +14,7 @@ interface NavigationContextType {
   isSwipeBackBlocked: boolean;
   /** 방 밖에서 여는 전체 N빵 정산 대장 */
   showGlobalDutchPay: boolean;
-  setActiveTab: (tab: 'schedule' | 'addons') => void;
+  setActiveTab: (tab: AppTab) => void;
   setShowCreateModal: (show: boolean) => void;
   setShowNotifications: (show: boolean) => void;
   setShowRoomInfoModal: (show: boolean) => void;
@@ -23,7 +27,7 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeTab, setActiveTab] = useState<'schedule' | 'addons'>('schedule');
+  const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRoomInfoModal, setShowRoomInfoModal] = useState(false);

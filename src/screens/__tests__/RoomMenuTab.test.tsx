@@ -218,7 +218,8 @@ describe('집계 표시', () => {
       currentParticipant: participant('p1', 'Tester', ['김치찌개']),
     });
 
-    expect(view.getByText('2명')).toBeTruthy();
+    // Figma `채팅/메뉴 패널` 이후 득표 표기는 'N표'
+    expect(view.getByText('2표')).toBeTruthy();
   });
 });
 
@@ -259,7 +260,7 @@ describe('메뉴 투표 연동 — 라운드 AL', () => {
 
     // 투표 카드의 득표수와 아래 '선택된 메뉴' 카드가 같은 값을 본다.
     expect(view.getByText('득표: 1명 (100%)')).toBeTruthy();
-    expect(view.getByText('1명')).toBeTruthy();
+    expect(view.getByText('1표')).toBeTruthy();
   });
 
   it('알레르기가 겹치면 경고를 붙인다 (안심 지킴이)', async () => {

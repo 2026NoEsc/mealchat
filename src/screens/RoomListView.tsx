@@ -3,6 +3,8 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, RefreshControl, StyleSheet, Alert
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Plus } from 'lucide-react-native';
 import { RoomCard } from '../components/RoomCard';
 import { THEME } from '../lib/theme';
 import { useLoading, useNavigation, useNotification, useRoom, useRoomCreation } from '../contexts';
@@ -10,8 +12,8 @@ import { useLoading, useNavigation, useNotification, useRoom, useRoomCreation } 
 /**
  * 채팅방 탭의 **방 목록** 화면 (방에 들어가 있지 않을 때).
  *
- * 초대코드 입장 / N빵 정산 대장 진입 / 방 카드 목록으로 구성됩니다.
- * App.tsx 에서 JSX 를 그대로 옮겨왔습니다.
+ * Figma `채팅방/홈`(node 549:3507) 기준 — 하나의 서피스 카드 안에
+ * 제목 + 방 만들기(+) / 초대코드 입장 / 방 목록이 들어간다.
  */
 interface RoomListViewProps {
   onRefresh: () => void;
@@ -26,213 +28,257 @@ const RoomListView: React.FC<RoomListViewProps> = ({
   isProfileIncomplete
 }) => {
   const { refreshing } = useLoading();
-  const { setActiveTab, setShowGlobalDutchPay } = useNavigation();
+  const { setActiveTab, setShowGlobalDutchPay, setShowCreateModal } = useNavigation();
   const { appNotifications } = useNotification();
-  const { roomList, roomsLoading, setCurrentRoom, setRoomSubTab, setRoomOverlay } = useRoom();
+  const { roomList, roomSummaries, roomsLoading, setCurrentRoom, setRoomSubTab } = useRoom();
   const { joinRoomCode, setJoinRoomCode } = useRoomCreation();
 
-  // 원본이 쓰던 이름을 유지해, 아래 JSX 를 한 줄도 고치지 않았습니다.
-  const handleJoinRoomByCode = onJoinRoomByCode;
+  const requireProfile = (action: () => void) => {
+    if (isProfileIncomplete) {
+      Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
+      return;
+    }
+    action();
+  };
 
   return (
-    <ScrollView 
-      style={styles.tabBody} 
-      contentContainerStyle={{ paddingBottom: 30 }}
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.screenContent}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.primary]} />
       }
     >
-      <Text style={styles.sectionHeading}>현재 개설된 밀챗 방</Text>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>MEALCHATING</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            accessibilityLabel="새 약속 만들기"
+            onPress={() => requireProfile(() => setShowCreateModal(true))}
+          >
+            <Plus size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Join Room Code Input */}
-      <View style={styles.joinCard}>
-        <View style={styles.joinRow}>
+        <LinearGradient
+          colors={[THEME.accentGradientStart, THEME.accentGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.divider}
+        />
+
+        <View style={styles.inviteBox}>
           <TextInput
-            style={styles.joinInput}
+            style={styles.inviteInput}
             placeholder="초대 코드 6자리 입력"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={THEME.textTertiary}
             value={joinRoomCode}
             onChangeText={setJoinRoomCode}
             autoCapitalize="characters"
             maxLength={6}
           />
-          <TouchableOpacity style={styles.joinBtn} onPress={handleJoinRoomByCode}>
-            <Text style={styles.joinBtnText}>입장</Text>
+          <TouchableOpacity style={styles.enterButton} onPress={onJoinRoomByCode}>
+            <Text style={styles.enterButtonText}>입장</Text>
           </TouchableOpacity>
         </View>
+
+        {roomsLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={THEME.primary} />
+            <Text style={styles.loadingText}>방 목록을 불러오는 중...</Text>
+          </View>
+        ) : roomList.length > 0 ? (
+          <View style={styles.roomList}>
+            {roomList.map(room => {
+              const summary = roomSummaries[room.id];
+              return (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  unreadCount={appNotifications.filter(notif => notif.room_id === room.id).length}
+                  members={summary?.members}
+                  lastMessage={summary?.lastMessage}
+                  lastActivityAt={summary?.lastActivityAt}
+                  onPress={() => {
+                    setCurrentRoom(room);
+                    setRoomSubTab('schedule');
+                    setActiveTab('chat');
+                  }}
+                />
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>참여 중인 밀챗 방이 없습니다.</Text>
+            <Text style={styles.emptySubText}>위 + 버튼으로 방을 만들거나 초대코드로 참여해 보세요.</Text>
+          </View>
+        )}
+
+        <Text style={styles.footerNote}>밥약 방은 정산 후 자동으로 사라져요</Text>
       </View>
 
-      {/* My Dutch Pay Ledger Button */}
+      {/*
+        N빵 정산 대장은 Figma `채팅방/홈` 에 없지만, 방이 사라진 뒤의 정산을
+        여는 유일한 상시 진입점이라 남겨 두고 카드 톤만 맞췄다.
+        (홈 탭의 PayNudge 는 미완료 건이 있을 때만 나타난다)
+      */}
       <TouchableOpacity
-        style={styles.globalDutchPayBtnCard}
-        onPress={() => {
-          if (isProfileIncomplete) {
-            Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
-            return;
-          }
-          setShowGlobalDutchPay(true);
-        }}
+        style={styles.ledgerCard}
+        onPress={() => requireProfile(() => setShowGlobalDutchPay(true))}
       >
-        <View style={styles.globalDutchPayBtnCardContent}>
-          <Text style={styles.globalDutchPayBtnCardTitle}>💸 나의 N빵 정산 대장</Text>
-          <Text style={styles.globalDutchPayBtnCardSubtitle}>
-            방이 폭파된 후에도 남아있는 미완료 정산 내역을 확인하고 송금할 수 있습니다.
-          </Text>
+        <View style={styles.ledgerTextGroup}>
+          <Text style={styles.ledgerTitle}>나의 N빵 정산 대장</Text>
+          <Text style={styles.ledgerSubtitle}>방이 사라져도 정산 내역은 남아 있어요</Text>
         </View>
-        <Text style={styles.globalDutchPayBtnCardArrow}>보기 ➜</Text>
+        <Text style={styles.ledgerArrow}>보기 →</Text>
       </TouchableOpacity>
-
-      {/* Room Card List */}
-      {roomsLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={styles.loadingText}>방 목록을 불러오는 중...</Text>
-        </View>
-      ) : roomList.length > 0 ? (
-        <View style={{ gap: 12 }}>
-          {roomList.map(room => {
-            // Calculate unread count for this room
-            const roomUnreadCount = appNotifications.filter(notif => notif.room_id === room.id).length;
-
-            return (
-              <RoomCard
-                key={room.id}
-                room={room}
-                unreadCount={roomUnreadCount}
-                onPress={() => {
-                  setCurrentRoom(room);
-                  setRoomSubTab('schedule');
-                }}
-                onChatPress={() => {
-                  setCurrentRoom(room);
-                  setRoomSubTab('schedule');
-                  setActiveTab('addons');
-                }}
-                onMenuPress={() => {
-                  setCurrentRoom(room);
-                  setRoomSubTab('menu');
-                  setActiveTab('addons');
-                }}
-                onSchedulePress={() => {
-                  setCurrentRoom(room);
-                  setRoomOverlay('schedule');
-                  setActiveTab('addons');
-                }}
-              />
-            );
-          })}
-        </View>
-      ) : (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>참여 중인 밀챗 방이 없습니다.</Text>
-          <Text style={styles.emptySubText}>[일정 조율] 탭에서 방을 개설하거나 초대코드로 참여해 보세요.</Text>
-        </View>
-      )}
     </ScrollView>
   );
 };
 
-// App.tsx 에서 이 화면이 쓰는 스타일만 가져왔습니다.
 const styles = StyleSheet.create({
-  tabBody: {
-    flex: 1,
-    padding: 16
-  },
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: THEME.text,
-    marginBottom: 12
-  },
-  joinCard: {
-    backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16
-  },
-  joinRow: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  joinInput: {
+  screen: {
     flex: 1,
     backgroundColor: THEME.background,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    color: THEME.text,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13
   },
-  joinBtn: {
-    backgroundColor: THEME.primary,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center'
+  screenContent: {
+    padding: 16,
+    paddingBottom: 30,
   },
-  joinBtnText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold'
-  },
-  globalDutchPayBtnCard: {
+  card: {
     backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
+    shadowColor: '#A9A9A9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  globalDutchPayBtnCardContent: {
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: THEME.accentSoft,
+    letterSpacing: 0.5,
+  },
+  addButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: {
+    height: 2,
+    borderRadius: 3,
+    marginTop: 10,
+  },
+  inviteBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    height: 38,
+    paddingLeft: 12,
+    paddingRight: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+    backgroundColor: THEME.card,
+  },
+  inviteInput: {
     flex: 1,
-    marginRight: 12,
-  },
-  globalDutchPayBtnCardTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
     color: THEME.text,
-  },
-  globalDutchPayBtnCardSubtitle: {
-    fontSize: 10,
-    color: THEME.textMuted,
-    marginTop: 4,
-  },
-  globalDutchPayBtnCardArrow: {
     fontSize: 12,
+    paddingVertical: 0,
+  },
+  enterButton: {
+    height: 28,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enterButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.primary,
+  },
+  roomList: {
+    marginTop: 14,
+    gap: 8,
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60
+    paddingVertical: 60,
   },
   loadingText: {
     color: THEME.textMuted,
     fontSize: 12,
-    marginTop: 12
+    marginTop: 12,
   },
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60
+    paddingVertical: 48,
   },
   emptyText: {
     color: THEME.textMuted,
     fontSize: 13,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   emptySubText: {
     color: THEME.textMuted,
     fontSize: 11,
-    marginTop: 4
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  footerNote: {
+    marginTop: 14,
+    fontSize: 10,
+    color: THEME.textMuted,
+    textAlign: 'center',
+  },
+  ledgerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.accentSoftBorder,
+    backgroundColor: THEME.card,
+  },
+  ledgerTextGroup: {
+    flex: 1,
+    marginRight: 12,
+  },
+  ledgerTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: THEME.text,
+  },
+  ledgerSubtitle: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginTop: 3,
+  },
+  ledgerArrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.accentSoft,
   },
 });
 

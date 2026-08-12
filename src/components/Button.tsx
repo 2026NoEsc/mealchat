@@ -22,6 +22,7 @@ export const Button: React.FC<ButtonProps> = ({ variant, label, onPress, disable
   if (isGradientVariant(variant)) {
     return (
       <TouchableOpacity
+        testID="app-button"
         activeOpacity={0.8}
         onPress={onPress}
         disabled={disabled}
@@ -41,6 +42,7 @@ export const Button: React.FC<ButtonProps> = ({ variant, label, onPress, disable
 
   return (
     <TouchableOpacity
+      testID="app-button"
       activeOpacity={0.8}
       onPress={onPress}
       disabled={disabled}
@@ -61,25 +63,26 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  // ⚠️ solidFill/dangerFill 은 TouchableOpacity **자체**에 얹힙니다.
+  //    여기에 flex:1 을 두면 flexBasis 가 0 이 되어 위 height:48 을 덮어쓰고,
+  //    부모가 높이를 주지 않는 한 버튼이 높이 0 으로 접힙니다.
+  //    (그라디언트 변형은 flex:1 이 안쪽 LinearGradient 에 붙어 멀쩡했던 탓에
+  //     오래 드러나지 않았습니다. `findByText` 는 레이아웃을 보지 않습니다.)
   gradientFill: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   solidFill: {
-    flex: 1,
     backgroundColor: THEME.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   dangerFill: {
-    flex: 1,
     backgroundColor: THEME.surface,
     borderWidth: 1,
     borderColor: THEME.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   disabled: {
     opacity: 0.5,

@@ -22,7 +22,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
     <View style={styles.container}>
       {TABS.map(({ key, label, Icon }) => {
         const isActive = key === activeTab;
-        const color = isActive ? THEME.primary : THEME.textMuted;
+        // Figma 는 비활성 라벨도 검정이고, 활성만 주황 + 아래 표시 바다.
+        const color = isActive ? THEME.primary : THEME.text;
         return (
           <TouchableOpacity
             key={key}
@@ -32,6 +33,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
           >
             <Icon size={20} color={color} />
             <Text style={[styles.tabLabel, { color }, isActive && styles.tabLabelActive]}>{label}</Text>
+            {isActive && <View style={styles.activeBar} />}
           </TouchableOpacity>
         );
       })}
@@ -42,21 +44,32 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 60,
+    height: 62,
     backgroundColor: THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 3,
   },
   tabLabel: {
     fontSize: 11,
   },
   tabLabelActive: {
     fontWeight: 'bold',
+  },
+  activeBar: {
+    position: 'absolute',
+    bottom: 0,
+    height: 3,
+    width: '58%',
+    borderRadius: 3,
+    backgroundColor: THEME.primary,
   },
 });

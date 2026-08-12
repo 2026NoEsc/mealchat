@@ -120,6 +120,24 @@ export interface Room {
   ai_recommendations?: AIRecommendation[];
 }
 
+/** 방 목록 카드에 그릴 멤버 한 명 (아바타 스택용 최소 정보) */
+export interface RoomMemberSummary {
+  id: string;
+  name: string;
+  avatarColor: string;
+  avatarUrl?: string;
+}
+
+/**
+ * 방 카드 한 장이 쓰는 요약 정보.
+ * `rooms` 테이블에 없어서 방 목록을 불러올 때 따로 모아 온다.
+ */
+export interface RoomSummary {
+  members: RoomMemberSummary[];
+  lastMessage?: string;
+  lastActivityAt?: string;
+}
+
 export interface Participant {
   id: string;
   room_id: string;

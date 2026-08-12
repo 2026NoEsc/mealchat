@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Share, Alert, Linking, KeyboardAvoidingView, Platform, NativeModules, Image } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Share, Alert, Linking, KeyboardAvoidingView, Platform, NativeModules } from 'react-native';
 // react-native 내장 SafeAreaView는 iOS 전용이라 Android에서 아무 여백도 만들지 않습니다.
 // (시연 영상은 iOS라 정상으로 보였고, Android에서만 상태바·네비게이션 바에 겹쳤습니다)
 // Expo 표준 패키지로 교체해 양 플랫폼에서 동작하게 합니다.
@@ -10,7 +10,7 @@ import * as Notifications from 'expo-notifications';
 
 import { supabase } from './lib/supabaseClient';
 import { withSessionRetry, describeJwtError } from './lib/supabaseRetry';
-import type { Room, PersonalData, ScheduleAvailability, Profile, AppNotification, Message, PrivacySettings } from './lib/types';
+import type { Room, PersonalData, ScheduleAvailability, Profile, AppNotification, Message, PrivacySettings, RoomSummary } from './lib/types';
 import { usePanResponderSwipeBack } from './lib/usePanResponderSwipeBack';
 import { ProfileSetup } from './components/ProfileSetup';
 import ScheduleTab from './screens/ScheduleTab';
@@ -23,9 +23,14 @@ import LocationPickerModal from './screens/LocationPickerModal';
 import RoomListView from './screens/RoomListView';
 import RoomScheduleSheet from './screens/RoomScheduleSheet';
 import RoomMenuTab from './screens/RoomMenuTab';
-import { MealChatLogo } from './components/MealChatLogo';
+import RoomChatView from './screens/RoomChatView';
+import RoomMemberSheet from './screens/RoomMemberSheet';
+import RoomDutchPaySheet from './screens/RoomDutchPaySheet';
+import { RoomPanelSheet } from './components/RoomPanelSheet';
+import { HomeTab } from './screens/HomeTab';
+import { BottomNav } from './components/BottomNav';
+import { AppHeader } from './components/AppHeader';
 import { calculateAIRecommendations } from './lib/aiRecommender';
-import { DutchPay } from './components/DutchPay';
 import { AuthScreen } from './components/AuthScreen';
 import { LoadingScreen } from './components/LoadingScreen';
 import { storage } from './lib/storage';
@@ -33,7 +38,7 @@ import { THEME } from './lib/theme';
 import { resolveRoomOwnerProfileId, getMeetingDateDisplay } from './lib/roomUtils';
 import { sendScheduleConfirmedNotification, sendRoomParticipationNotification, sendMessageNotification, setupNotificationListeners, sendUnpaidBillNotification, sendRoomCreatedNotification, sendUserJoinedNotification, scheduleConfirmedReminderNotification, cancelNotificationsByType } from './lib/notificationUtils';
 import type { NotificationTarget } from './lib/notificationUtils';
-import { Sparkles, Calendar as CalendarIcon, Bell, Lock, ExternalLink, Plus, Send, Volume2, ChevronLeft, X, Settings, Smile } from 'lucide-react-native';
+import { ExternalLink, X } from 'lucide-react-native';
 import {
   AuthProvider,
   NetworkProvider,
@@ -58,6 +63,7 @@ import {
   useAI,
   useNotification
 } from './contexts';
+import type { AppTab } from './contexts';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -103,26 +109,6 @@ export default function App() {
   );
 }
 
-const EMOTICONS_MAP: { [key: string]: any } = {
-  dudu_meet: require('../public/characters/dudu_emoticon_meet.png'),
-  dudu_sad: require('../public/characters/dudu_emoticon_sad.png'),
-  dudu_love: require('../public/characters/dudu_emoticon_love.png'),
-  dudu_wink: require('../public/characters/dudu_emoticon_wink.png'),
-  dudu_shock: require('../public/characters/dudu_emoticon_shock.png'),
-  moa_ok: require('../public/characters/moa_emoticon_ok.png'),
-  moa_hello: require('../public/characters/moa_emoticon_hello.png'),
-  moa_busy: require('../public/characters/moa_emoticon_busy.png'),
-  moa_sleep: require('../public/characters/moa_emoticon_sleep.png'),
-  moa_party: require('../public/characters/moa_emoticon_party.png'),
-  welling_eat: require('../public/characters/welling_emoticon_eat.png'),
-  welling_coffee: require('../public/characters/welling_emoticon_coffee.png'),
-  welling_starving: require('../public/characters/welling_emoticon_starving.png'),
-  welling_full: require('../public/characters/welling_emoticon_full.png'),
-  welling_thumbs: require('../public/characters/welling_emoticon_thumbs.png'),
-  ttori_dutch: require('../public/characters/ttori_emoticon_dutch.png'),
-  ttori_angry: require('../public/characters/ttori_emoticon_angry.png'),
-};
-
 function AppContent() {
   // ── Context 이전 ──────────────────────────────────────────────────────
   // 이 컴포넌트가 들고 있던 useState 55개를 전부 Context 로 옮겼습니다.
@@ -146,14 +132,14 @@ function AppContent() {
   } = useNavigation();
   // Stage 2a — 방 목록 / 현재 방 상태
   const {
-    roomList, currentRoom, participants, currentParticipant, roomMessages,
-    newMessageText, roomOverlay, roomSubTab, showEmoticonPicker,
+    roomList, currentRoom, participants, currentParticipant,
+    newMessageText, roomOverlay,
     roomsLoading, participantsLoading,
-    setRoomList, setCurrentRoom, setParticipants, setCurrentParticipant,
+    setRoomList, setRoomSummaries, setCurrentRoom, setParticipants, setCurrentParticipant,
     setRoomMessages, setNewMessageText, setRoomOverlay, setRoomSubTab,
     setShowEmoticonPicker, setRoomsLoading, setParticipantsLoading
   } = useRoom();
-  const { timeLeft, setTimeLeft } = useRoomTimer();
+  const { setTimeLeft } = useRoomTimer();
   // Stage 2b — 메이트 검색 / 프로필 모달
   const {
     selectedProfileId, selectedProfile, showProfileModal, searchFriendQuery,
@@ -302,10 +288,6 @@ function AppContent() {
     onSwipeBack: () => setShowGlobalDutchPay(false)
   });
 
-  const roomDutchPayPanResponder = usePanResponderSwipeBack({
-    onSwipeBack: () => setRoomOverlay(null)
-  });
-  
   // Room sub-navigation inside active room details
 
   // Room / Participant states
@@ -487,7 +469,7 @@ function AppContent() {
         Alert.alert('안내', '이미 참여한 방입니다.');
         setCurrentRoom(room);
         setRoomSubTab('schedule');
-        setActiveTab('addons');
+        setActiveTab('chat');
         return;
       }
 
@@ -498,7 +480,7 @@ function AppContent() {
       // 7. 방 및 탭 설정
       setCurrentRoom(room);
       setRoomSubTab('schedule');
-      setActiveTab('addons');
+      setActiveTab('chat');
 
       Alert.alert('초대 수락 완료', `'${room.title}' 방에 성공적으로 입장했습니다! 🎉`);
     } catch (err) {
@@ -712,7 +694,7 @@ function AppContent() {
             console.log('[PendingJoinCode] User already participates in this room');
             Alert.alert('안내', '이미 참여한 방입니다.');
             setCurrentRoom(room as Room);
-            setActiveTab('addons');
+            setActiveTab('chat');
             return;
           }
 
@@ -743,9 +725,12 @@ function AppContent() {
         }
 
         setCurrentRoom(data as Room);
-        setRoomSubTab(target === 'dutch' ? 'dutch' : 'schedule');
-        setRoomOverlay(null);
-        setActiveTab('addons');
+        setRoomSubTab('schedule');
+        // 정산 알림을 탭했으면 정산 패널까지 열어 준다.
+        // 전에는 roomSubTab 을 'dutch' 로 두고 오버레이를 닫았는데,
+        // 'dutch' 서브탭을 그리는 곳이 없어 그냥 채팅만 열렸다.
+        setRoomOverlay(target === 'dutch' ? 'dutch' : null);
+        setActiveTab('chat');
       } catch (err) {
         console.error('[NotificationTap] Unexpected error:', err);
       }
@@ -922,6 +907,62 @@ function AppContent() {
     }
   };
 
+  /**
+   * 방 목록 카드가 쓰는 부가 정보(멤버 아바타 / 마지막 메시지)를 모아 온다.
+   *
+   * `rooms` 테이블에 없는 값이라 방마다 따로 필요하지만, 방 수만큼 쿼리를 날리는
+   * 대신 참여자 1회 + 메시지 1회로 끝내고 클라이언트에서 방별로 접는다.
+   * 실패해도 방 목록 자체는 이미 그려진 뒤이므로 조용히 넘긴다 — 카드가
+   * 아바타/미리보기 없이 나올 뿐이다.
+   */
+  const fetchRoomSummaries = async (roomIds: string[]) => {
+    if (roomIds.length === 0) {
+      setRoomSummaries({});
+      return;
+    }
+    try {
+      const [membersResult, messagesResult] = await Promise.all([
+        supabase
+          .from('participants')
+          .select('id, room_id, name, avatar_color, avatar_url')
+          .in('room_id', roomIds),
+        supabase
+          .from('messages')
+          .select('room_id, message, created_at')
+          .in('room_id', roomIds)
+          .order('created_at', { ascending: false })
+          .limit(300),
+      ]);
+
+      if (membersResult.error) throw membersResult.error;
+      if (messagesResult.error) throw messagesResult.error;
+
+      const summaries: Record<string, RoomSummary> = {};
+      for (const id of roomIds) {
+        summaries[id] = { members: [] };
+      }
+      for (const row of membersResult.data || []) {
+        summaries[row.room_id]?.members.push({
+          id: row.id,
+          name: row.name,
+          avatarColor: row.avatar_color,
+          avatarUrl: row.avatar_url || undefined,
+        });
+      }
+      // created_at 내림차순이므로 방마다 처음 만나는 행이 마지막 메시지다
+      for (const row of messagesResult.data || []) {
+        const summary = summaries[row.room_id];
+        if (summary && !summary.lastActivityAt) {
+          summary.lastMessage = row.message;
+          summary.lastActivityAt = row.created_at;
+        }
+      }
+      setRoomSummaries(summaries);
+    } catch (err) {
+      console.warn('[FetchRoomSummaries] Could not load room card details:', err);
+    }
+  };
+
   // Fetch all active rooms
   const fetchRooms = async () => {
     if (!user || !globalProfile) return;
@@ -948,6 +989,7 @@ function AppContent() {
 
       if (joinedRoomIds.length === 0) {
         setRoomList([]);
+        setRoomSummaries({});
         setRoomsLoading(false);
         return;
       }
@@ -970,6 +1012,7 @@ function AppContent() {
       console.log(`[FetchRooms] Succeeded. Loaded ${data?.length || 0} active rooms.`);
       setRoomList(data || []);
       setNetworkError(null); // Clear error on success
+      await fetchRoomSummaries((data || []).map(room => room.id));
     } catch (err) {
       console.error('[FetchRooms] Unexpected error:', err);
       handleApiError(err, '방 목록을 불러올 수 없습니다.');
@@ -1602,7 +1645,7 @@ function AppContent() {
           setJoinRoomCode('');
           setCurrentRoom(data);
           setRoomSubTab('schedule');
-          setActiveTab('addons');
+          setActiveTab('chat');
           return;
         }
       }
@@ -1610,7 +1653,7 @@ function AppContent() {
       setJoinRoomCode('');
       setCurrentRoom(data);
       setRoomSubTab('schedule');
-      setActiveTab('addons');
+      setActiveTab('chat');
 
       // 방에 입장한 사람이 들어왔다는 알림 발송 (모두에게)
       if (globalProfile) {
@@ -1709,7 +1752,7 @@ function AppContent() {
         `약속 조율 방이 생성되었습니다!\n초대코드: ${code}`
       );
 
-      setActiveTab('addons');
+      setActiveTab('chat');
       setCurrentRoom(room);
       setRoomOverlay('schedule');
       setRoomSubTab('schedule');
@@ -3091,7 +3134,14 @@ ${inviteLink}
     }
   };
 
-  const handleTabChange = (tab: 'schedule' | 'addons') => {
+  const handleTabChange = (tab: AppTab) => {
+    // TODO(담당자 B): "프로필을 탭으로 전환" 이 끝나면 이 분기를 지우고
+    //   `activeTab === 'profile'` 에서 ProfileSetup 의 'main' 뷰를 직렬 렌더할 것.
+    //   그 전까지는 기존 설정 모달을 열어 동작을 보존한다.
+    if (tab === 'profile') {
+      setShowSettingsModal(true);
+      return;
+    }
     setActiveTab(tab);
     if (globalProfile?.id) {
       fetchFollows(globalProfile.id);
@@ -3195,86 +3245,94 @@ ${inviteLink}
       >
 
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.logoRow} onPress={handleExitRoom}>
-          <MealChatLogo size={24} />
-          <Text style={styles.logoText}>밀챗</Text>
-        </TouchableOpacity>
+      {/* 헤더 — Figma Design System 의 AppHeader.
+          방 안에서는 그리지 않는다. Figma 는 같은 자리(y=30)에서 AppHeader 와
+          방 전용 roomHeader 가 서로를 대체한다. */}
+      {!currentRoom && (
+        <AppHeader
+          hasUnreadNotifications={showNotificationsRedDot}
+          onBellPress={() => {
+            if (isProfileIncomplete) {
+              Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
+              return;
+            }
+            setShowNotifications(!showNotifications);
+            setShowNotificationsRedDot(false);
+          }}
+        />
+      )}
 
-        <View style={styles.headerControls}>
-          {activeTab === 'addons' && !currentRoom && !isProfileIncomplete && (
-            <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
-              <Plus size={16} color="white" style={{ marginRight: 6 }} />
-              <Text style={styles.createBtnText}>새 약속 만들기</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Alarm Bell */}
-          <TouchableOpacity
-            style={[styles.bellBtn, showNotifications && styles.bellBtnActive]}
-            onPress={() => {
-              if (isProfileIncomplete) {
-                Alert.alert('알림', '프로필 설정을 먼저 완료해 주세요!');
-                return;
-              }
-              setShowNotifications(!showNotifications);
-              setShowNotificationsRedDot(false);
-            }}
-          >
-            <Bell size={16} color={showNotifications ? '#ef4444' : '#94a3b8'} />
-            {showNotificationsRedDot && <View style={styles.redDot} />}
-          </TouchableOpacity>
-
-          {/* Settings Button */}
-          <TouchableOpacity
-            style={styles.settingsHeaderBtn}
-            onPress={() => {
-              setShowSettingsModal(true);
-            }}
-          >
-            <Settings size={16} color="#94a3b8" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Notifications Drawer Overlay */}
+      {/* 알림 패널 — Figma `홈/알림`(node 549:3408).
+          Figma 도 전용 화면이 아니라 Dim 위에 뜨는 패널이라 드로어를 유지했다.
+          Figma 의 필터 칩(전체/일정/정산/메이트)과 행별 읽음 표시는 넣지 않았다 —
+          알림에 분류도, 개별 읽음 상태도 없다(‌`showNotificationsRedDot` 하나뿐). */}
       {showNotifications && (
-        <View style={styles.notificationsDrawer}>
-          <View style={styles.notifHeader}>
-            <Text style={styles.notifTitle}>정산 알림 목록 🔔</Text>
-            <TouchableOpacity onPress={() => setShowNotifications(false)}>
-              <Text style={styles.notifClose}>닫기</Text>
-            </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.notifDim}
+            activeOpacity={1}
+            onPress={() => setShowNotifications(false)}
+          />
+          <View style={styles.notificationsDrawer}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>알림</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowNotificationsRedDot(false);
+                  setShowNotifications(false);
+                }}
+              >
+                <Text style={styles.notifClose}>모두 읽음</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.notifScroll} contentContainerStyle={{ gap: 8 }}>
+              {appNotifications.length > 0 ? (
+                appNotifications.map(notif => (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={styles.notifCard}
+                    onPress={() => handleNotifClick(notif)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notifItemTitle} numberOfLines={1}>{notif.title}</Text>
+                      <Text style={styles.notifItemDesc} numberOfLines={2}>{notif.message}</Text>
+                    </View>
+                    <View style={styles.payLinkBadge}>
+                      <ExternalLink size={11} color={THEME.accentSoft} />
+                      <Text style={styles.payLinkText}>송금</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noNotifsText}>도착한 알림이 없습니다.</Text>
+              )}
+            </ScrollView>
+            <Text style={styles.notifFooter}>최근 30일의 알림을 보여드려요</Text>
           </View>
-          <ScrollView style={styles.notifScroll}>
-            {appNotifications.length > 0 ? (
-              appNotifications.map(notif => (
-                <TouchableOpacity
-                  key={notif.id}
-                  style={styles.notifCard}
-                  onPress={() => handleNotifClick(notif)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notifItemTitle}>{notif.title}</Text>
-                    <Text style={styles.notifItemDesc}>{notif.message}</Text>
-                  </View>
-                  <View style={styles.payLinkBadge}>
-                    <ExternalLink size={12} color="black" />
-                    <Text style={styles.payLinkText}>송금</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noNotifsText}>도착한 정산 알림이 없습니다.</Text>
-            )}
-          </ScrollView>
-        </View>
+        </>
       )}
 
       {/* Main Content Area */}
       <View style={styles.contentBody}>
-        
+
+        {/* TAB 0: 홈 (Figma 2_홈/홈/메인) */}
+        {activeTab === 'home' && (
+          <HomeTab
+            userName={globalProfile?.name ?? '밀챗'}
+            rooms={roomList}
+            unsettledCount={appNotifications.filter(notif => notif.amount > 0).length}
+            onCreateSchedule={() => setShowCreateModal(true)}
+            onSelectSchedule={roomId => {
+              const room = roomList.find(r => r.id === roomId);
+              if (!room) return;
+              setCurrentRoom(room);
+              setRoomSubTab('schedule');
+              setActiveTab('chat');
+            }}
+            onViewSettlements={() => setShowGlobalDutchPay(true)}
+          />
+        )}
+
         {/* TAB 1: 일정 조정 (Friend Heatmap Coordination) */}
         {activeTab === 'schedule' && (
           <ScheduleTab
@@ -3289,309 +3347,47 @@ ${inviteLink}
         )}
 
         {/* TAB 2: 부가기능 (Rooms & Settlings) */}
-        {activeTab === 'addons' && (
+        {activeTab === 'chat' && (
           <View style={styles.tabBodyContainer}>
             {currentRoom ? (
               <View style={{ flex: 1, backgroundColor: THEME.background }}>
-                {/* Room Info Bar & 24h Countdown */}
-                <View style={styles.roomInfoBar}>
-                  <TouchableOpacity style={styles.backChevronBtn} onPress={handleExitRoom}>
-                    <ChevronLeft size={24} color={THEME.text} />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={{ flex: 1, marginLeft: 8 }}
-                    onPress={() => setShowRoomInfoModal(true)}
+                <RoomChatView
+                  onSendMessage={handleSendMessage}
+                  onSendEmoticon={handleSendEmoticon}
+                  onViewProfile={handleViewProfile}
+                  onExitRoom={handleExitRoom}
+                  isOneDayRoom={isCurrentRoomOneDay}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                />
+                {/* 하단 패널 4종 — Figma `채팅/*` 패널.
+                    껍데기(손잡이·제목·부제·하단 버튼)는 RoomPanelSheet 가 맡고,
+                    안쪽 내용만 각 화면이 채운다. */}
+                {roomOverlay === 'menu' && (
+                  <RoomPanelSheet
+                    title="메뉴 정하기"
+                    subtitle="먹고 싶은 메뉴에 투표해 주세요"
+                    onClose={() => setRoomOverlay(null)}
+                    scrollable={false}
                   >
-                    <View style={styles.roomBarTitleRow}>
-                      <Text style={styles.roomBarTitle} numberOfLines={1}>{currentRoom.title} ▾</Text>
-                      <View style={styles.countdownContainer}>
-                        <Lock size={10} color="#f87171" style={{ marginRight: 3 }} />
-                        <Text style={styles.countdownText}>{timeLeft}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.roomBarMetaRow}>
-                      <Text style={[styles.roomBarMembers, { marginLeft: 0 }]}>
-                        멤버 {participants.length}명 | 정보 확인 & 코드 공유 ➜
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-
-                {/* 방 나가기/삭제 버튼 */}
-                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-                  <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: '#FEE2E2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
-                    onPress={handleLeaveRoom}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#DC2626' }}>🚪 방 나가기</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* KakaoNotice Bar */}
-                <View style={styles.kakaoNoticeArea}>
-                  <View style={styles.kakaoNoticeHeader}>
-                    <Volume2 size={14} color={THEME.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.kakaoNoticeHeaderText} numberOfLines={1}>
-                      📢 [공지] {currentRoom.is_confirmed 
-                        ? `약속 확정! 🗓️ ${currentRoom.confirmed_slot}` 
-                        : '밀챗 약속 일정을 조율해 주세요!'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.kakaoNoticeTabs}>
-                    {isCurrentRoomOneDay && (
-                      <TouchableOpacity 
-                        style={[styles.noticeTabBtn, roomOverlay === 'schedule' && styles.noticeTabBtnActive]}
-                        onPress={() => setRoomOverlay(roomOverlay === 'schedule' ? null : 'schedule')}
-                      >
-                        <Text style={[styles.noticeTabBtnText, roomOverlay === 'schedule' && styles.noticeTabBtnTextActive]}>
-                          🗓️ 일정 조율
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity 
-                      style={[
-                        styles.noticeTabBtn, 
-                        roomOverlay === 'dutch' && styles.noticeTabBtnActive,
-                        !isCurrentRoomOneDay && { flex: 1 }
-                      ]}
-                      onPress={() => setRoomOverlay(roomOverlay === 'dutch' ? null : 'dutch')}
-                    >
-                      <Text style={[styles.noticeTabBtnText, roomOverlay === 'dutch' && styles.noticeTabBtnTextActive]}>
-                        💸 N빵 정산
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* 참여자 정보 헤더 */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  // ⚠️ flexGrow: 0 을 빼지 마세요. 높이도 다시 고정하지 마세요.
-                  //
-                  // ScrollView 는 RN 내부 기본 스타일로 `flexGrow: 1` 을 달고 나옵니다.
-                  // 예전 코드의 `height: 60` 은 그 기본값을 **취소하지 못합니다.** 그래서
-                  // 이 줄이 남는 세로 공간을 아래 본문과 반씩 나눠 가져 279dp 를 차지했고
-                  // (onLayout 실측), 아바타는 60dp 뿐이라 나머지 219dp 가 빈 공간으로
-                  // 남았습니다. 메뉴 탭과 채팅 본문은 그만큼 눌려 219dp 밖에 못 썼습니다.
-                  //
-                  // 높이를 60 → 75 로 늘리는 식으로 때우지 않은 이유: 아바타(40) + 여백(4)
-                  // + 이름 줄 + 상하 패딩(16) 은 글꼴 크기에 따라 달라집니다. 실제로
-                  // 60dp 로 묶었을 때 이름이 가로로 잘렸습니다. 내용이 높이를 정하게 둡니다.
-                  style={{ flexGrow: 0, flexShrink: 0, paddingVertical: 8 }}
-                  contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
-                >
-                  {participants.map(p => (
-                    <View
-                      key={p.id}
-                      style={{ alignItems: 'center' }}
-                    >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: p.avatar_color,
-                          justifyContent: 'center',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
-                          {p.name[0]}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 10, marginTop: 4, color: THEME.textMuted }}>
-                        {p.name}
-                      </Text>
-                    </View>
-                  ))}
-                </ScrollView>
-
-                {/* Main Body - Menu Tab or Live chatroom or drop down active panel */}
-                {roomSubTab === 'menu' ? (
-                  <RoomMenuTab
-                    onUpdateMyVote={handleUpdateMyVote}
-                    onUpdatePoll={handleUpdatePoll}
-                  />
-                ) : (
-                  // Chatroom view
-                  <View
-                    style={{ flex: 1, position: 'relative' }}
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                  >
-
-                    {/* Chatroom view */}
-                    <View style={{ flex: 1 }}>
-                    <ScrollView
-                      style={[styles.chatScroll, { flex: 1 }]}
-                      contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
-                      keyboardShouldPersistTaps="handled"
-                      ref={(ref) => {
-                        setTimeout(() => ref?.scrollToEnd({ animated: true }), 100);
-                      }}
-                    >
-                        {roomMessages.length > 0 ? (
-                          roomMessages.map((msg, index) => {
-                            const isMe = msg.sender_id === globalProfile?.id;
-                            const prevMsg = index > 0 ? roomMessages[index - 1] : null;
-                            const isSameSender = prevMsg && prevMsg.sender_id === msg.sender_id;
-                            const showAvatar = !isMe && !isSameSender;
-
-                            // Message time formatting
-                            const messageTime = msg.created_at
-                              ? new Date(msg.created_at).toLocaleTimeString('ko-KR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                })
-                              : '';
-
-                            return (
-                              <View key={msg.id} style={[styles.chatRow, isMe ? styles.chatRowMe : styles.chatRowOther]}>
-                                {showAvatar ? (
-                                  <TouchableOpacity
-                                    style={[styles.chatAvatar, { backgroundColor: msg.sender_color }]}
-                                    onPress={() => handleViewProfile(msg.sender_id)}
-                                  >
-                                    <Text style={styles.chatAvatarText}>{msg.sender_name[0]}</Text>
-                                  </TouchableOpacity>
-                                ) : !isMe ? (
-                                  <View style={{ width: 40 }} />
-                                ) : null}
-                                <View style={{ maxWidth: '75%' }}>
-                                  {showAvatar && !isMe && (
-                                    <TouchableOpacity onPress={() => handleViewProfile(msg.sender_id)}>
-                                      <Text style={styles.chatSenderName}>{msg.sender_name}</Text>
-                                    </TouchableOpacity>
-                                  )}
-                                  {(() => {
-                                    const isEmoticon = msg.message.startsWith('[emoticon:') && msg.message.endsWith(']');
-                                    if (isEmoticon) {
-                                      const key = msg.message.slice(10, -1);
-                                      const imageSource = EMOTICONS_MAP[key];
-                                      if (imageSource) {
-                                        return (
-                                          <View>
-                                            <View style={styles.chatEmoticonBubble}>
-                                              <Image source={imageSource} style={styles.chatEmoticonImage} />
-                                            </View>
-                                            {messageTime && (
-                                              <Text style={styles.chatMessageTime}>{messageTime}</Text>
-                                            )}
-                                          </View>
-                                        );
-                                      }
-                                    }
-                                    return (
-                                      <View>
-                                        <View
-                                          style={[
-                                            styles.chatBubble,
-                                            isMe
-                                              ? styles.chatBubbleMe
-                                              : {
-                                                  ...styles.chatBubbleOther,
-                                                  backgroundColor: msg.sender_color ? msg.sender_color + '20' : THEME.surface
-                                                }
-                                          ]}
-                                        >
-                                          <Text style={[styles.chatText, isMe ? styles.chatTextMe : styles.chatTextOther]}>
-                                            {msg.message}
-                                          </Text>
-                                        </View>
-                                        {messageTime && (
-                                          <Text style={styles.chatMessageTime}>{messageTime}</Text>
-                                        )}
-                                      </View>
-                                    );
-                                  })()}
-                                </View>
-                              </View>
-                            );
-                          })
-                        ) : (
-                          <Text style={styles.emptyChatText}>
-                            대화방이 개설되었습니다. 메이트들과 인사를 나눠보세요! 👋
-                          </Text>
-                        )}
-                      </ScrollView>
-
-                    {/* Chat Input */}
-                    <View style={styles.chatInputBar}>
-                      <TouchableOpacity
-                        style={styles.emoticonToggleBtn}
-                        onPress={() => setShowEmoticonPicker(!showEmoticonPicker)}
-                      >
-                        <Smile size={22} color={showEmoticonPicker ? THEME.primary : THEME.textMuted} />
-                      </TouchableOpacity>
-                      <TextInput
-                        style={styles.chatTextInput}
-                        placeholder="메시지를 입력해 주세요..."
-                        placeholderTextColor={THEME.textMuted}
-                        value={newMessageText}
-                        onChangeText={(t) => {
-                          setNewMessageText(t);
-                          if (showEmoticonPicker) setShowEmoticonPicker(false);
-                        }}
-                        multiline
-                      />
-                      <TouchableOpacity style={styles.chatSendBtn} onPress={handleSendMessage}>
-                        <Send size={16} color="white" />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Emoticon Picker */}
-                    {showEmoticonPicker && (
-                      <View style={styles.emoticonPickerContainer}>
-                        <Text style={styles.emoticonPickerTitle}>밀챗 캐릭터 이모티콘</Text>
-                        <ScrollView showsVerticalScrollIndicator={true} style={styles.emoticonPickerScrollContainer} contentContainerStyle={styles.emoticonPickerGrid}>
-                          {Object.keys(EMOTICONS_MAP).map((key) => {
-                            const nameMap: { [k: string]: string } = {
-                              dudu_meet: '약속두두',
-                              dudu_sad: '슬픈두두',
-                              dudu_love: '하트두두',
-                              dudu_wink: '윙크두두',
-                              dudu_shock: '깜놀두두',
-                              moa_ok: '확인모아',
-                              moa_hello: '안녕모아',
-                              moa_busy: '바쁜모아',
-                              moa_sleep: '낮잠모아',
-                              moa_party: '파티모아',
-                              welling_eat: '냠냠웰링',
-                              welling_coffee: '커피웰링',
-                              welling_starving: '배고픈웰링',
-                              welling_full: '배부른웰링',
-                              welling_thumbs: '최고웰링',
-                              ttori_dutch: '정산또리',
-                              ttori_angry: '화난또리',
-                            };
-                            return (
-                              <TouchableOpacity
-                                key={key}
-                                style={styles.emoticonPickerItem}
-                                onPress={() => handleSendEmoticon(key)}
-                              >
-                                <Image source={EMOTICONS_MAP[key]} style={styles.emoticonPickerImage} />
-                                <Text style={styles.emoticonPickerName}>{nameMap[key]}</Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </ScrollView>
-                      </View>
-                    )}
-                  </View>
-
-                  </View>
+                    <RoomMenuTab
+                      onUpdateMyVote={handleUpdateMyVote}
+                      onUpdatePoll={handleUpdatePoll}
+                    />
+                  </RoomPanelSheet>
                 )}
 
-                {/* 일정 조율 / N빵 정산 시트
-                    방 컨테이너 직속으로 둔다. 예전에는 채팅 뷰 안쪽에 있어
-                    position:absolute 의 기준이 하단 일부 영역이 되었고,
-                    시트가 화면의 아래 26% 에만 갇혀 열렸다.
-                    문서 06 의 원본 레이아웃은 화면을 덮는 전체 패널이다. */}
+                {roomOverlay === 'members' && (
+                  <RoomMemberSheet
+                    onClose={() => setRoomOverlay(null)}
+                    onInvite={handleShareRoom}
+                    onViewProfile={(profileId) => {
+                      setRoomOverlay(null);
+                      handleViewProfile(profileId);
+                    }}
+                  />
+                )}
+
                 {roomOverlay === 'schedule' && (
                   <RoomScheduleSheet
                     onRunAIRecommendations={handleRunAIRecommendations}
@@ -3602,25 +3398,16 @@ ${inviteLink}
                   />
                 )}
 
-                  {roomOverlay === 'dutch' && (
-                    <View style={styles.noticeDropdownOverlay} {...roomDutchPayPanResponder.panHandlers}>
-                      <View style={styles.overlayHeader}>
-                        <Text style={styles.overlayHeaderTitle}>💸 N빵 정산</Text>
-                        <TouchableOpacity onPress={() => setRoomOverlay(null)} style={styles.overlayCloseBtn}>
-                          <Text style={styles.overlayCloseText}>접기 ✕</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <DutchPay
-                          roomId={currentRoom.id}
-                          roomTitle={currentRoom.title}
-                          currentParticipant={currentParticipant}
-                          participants={participants}
-                          globalProfile={globalProfile}
-                        />
-                      </View>
-                    </View>
-                  )}
+                {roomOverlay === 'dutch' && (
+                  <RoomDutchPaySheet
+                    roomId={currentRoom.id}
+                    roomTitle={currentRoom.title}
+                    participants={participants}
+                    currentParticipant={currentParticipant}
+                    globalProfile={globalProfile}
+                    onClose={() => setRoomOverlay(null)}
+                  />
+                )}
               </View>
             ) : (
 
@@ -3636,30 +3423,8 @@ ${inviteLink}
       </View>
 
 
-      {/* Bottom Tab Navigation */}
-      {!currentRoom && (
-        <View style={styles.tabNavigation}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'schedule' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('schedule')}
-          >
-            <CalendarIcon size={20} color={activeTab === 'schedule' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'schedule' && styles.tabButtonTextActive]}>
-              일정 조율
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'addons' && styles.tabButtonActive]}
-            onPress={() => handleTabChange('addons')}
-          >
-            <Sparkles size={20} color={activeTab === 'addons' ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.tabButtonText, activeTab === 'addons' && styles.tabButtonTextActive]}>
-              채팅방
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Bottom Tab Navigation — Figma Design System / BottomNav1~4 */}
+      {!currentRoom && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
 
       {/* 프로필 상세 모달 — screens/ProfileViewModal.tsx 로 분리 */}
       <ProfileViewModal
@@ -3718,6 +3483,7 @@ ${inviteLink}
         onKickParticipant={handleKickParticipant}
         onShareRoom={handleShareRoom}
         onViewProfile={handleViewProfile}
+        onLeaveRoom={handleLeaveRoom}
       />
 
       {/* N빵 정산 대장 — screens/GlobalDutchPayModal.tsx 로 분리 */}
@@ -3741,21 +3507,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.background
   },
-  header: {
-    height: 56,
-    backgroundColor: THEME.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
   logoIcon: {
     width: 28,
     height: 28,
@@ -3764,67 +3515,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  logoText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: THEME.text,
-    letterSpacing: -0.5
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  createBtn: {
-    backgroundColor: THEME.menuNeeded,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4
-  },
-  createBtnText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600'
-  },
-  bellBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.avatarBg,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative'
-  },
-  bellBtnActive: {
-    backgroundColor: 'rgba(211, 47, 47, 0.15)'
-  },
-  settingsHeaderBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.avatarBg,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  redDot: {
+  notifDim: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: THEME.danger
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 190,
+    backgroundColor: THEME.modalOverlay
   },
   notificationsDrawer: {
     position: 'absolute',
@@ -3833,76 +3531,82 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 200,
     backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 10,
-    padding: 12,
-    maxHeight: 250,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
+    maxHeight: 420,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10
+    shadowRadius: 10,
+    elevation: 8
   },
   notifHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    paddingBottom: 6,
-    marginBottom: 8
+    marginBottom: 10
   },
   notifTitle: {
     color: THEME.text,
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold'
   },
   notifClose: {
-    color: THEME.textMuted,
-    fontSize: 11
+    color: THEME.accentSoft,
+    fontSize: 11,
+    fontWeight: '600'
   },
   notifScroll: {
-    flex: 1
+    flexGrow: 0
   },
   notifCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    gap: 10,
+    backgroundColor: THEME.card,
     borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    padding: 8,
-    marginVertical: 4
+    borderColor: THEME.accentSoftBorder,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10
   },
   notifItemTitle: {
-    color: THEME.primary,
-    fontSize: 11,
+    color: THEME.text,
+    fontSize: 13,
     fontWeight: 'bold'
   },
   notifItemDesc: {
-    color: THEME.textMuted,
-    fontSize: 10,
-    marginTop: 2
+    color: THEME.textSecondary,
+    fontSize: 11,
+    marginTop: 3
   },
   payLinkBadge: {
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',
-    backgroundColor: '#FEE500',
-    borderRadius: 4,
+    backgroundColor: THEME.badgeBg,
+    borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 4
+    paddingVertical: 5
   },
   payLinkText: {
-    color: 'black',
+    color: THEME.accentSoft,
     fontSize: 10,
     fontWeight: 'bold'
   },
   noNotifsText: {
     color: THEME.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     textAlign: 'center',
-    paddingVertical: 20
+    paddingVertical: 28
+  },
+  notifFooter: {
+    color: THEME.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
+    paddingTop: 10
   },
   contentBody: {
     flex: 1
@@ -4030,44 +3734,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 12
   },
-  roomInfoBar: {
-    backgroundColor: THEME.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  roomBarTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  roomBarTitle: {
-    color: THEME.text,
-    fontSize: 14,
-    fontWeight: 'bold'
-  },
-  countdownContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(211, 47, 47, 0.08)',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2
-  },
-  countdownText: {
-    color: THEME.danger,
-    fontSize: 9,
-    fontWeight: 'bold'
-  },
-  roomBarMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4
-  },
   roomBarCode: {
     fontSize: 11,
     color: THEME.primary,
@@ -4081,10 +3747,6 @@ const styles = StyleSheet.create({
   shareRowText: {
     fontSize: 11,
     fontWeight: 'bold'
-  },
-  roomBarMembers: {
-    fontSize: 11,
-    color: THEME.textMuted
   },
   exitBtn: {
     paddingHorizontal: 8,
@@ -4155,36 +3817,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14
   },
-  tabNavigation: {
-    flexDirection: 'row',
-    backgroundColor: THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    height: 60,
-    justifyContent: 'space-around',
-    alignItems: 'center'
-  },
-  tabButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent'
-  },
-  tabButtonActive: {
-    borderBottomColor: THEME.primary
-  },
-  tabButtonText: {
-    fontSize: 11,
-    color: THEME.textMuted,
-    marginTop: 4,
-    fontWeight: '500'
-  },
-  tabButtonTextActive: {
-    color: THEME.primary,
-    fontWeight: 'bold'
-  },
   modalBtnRow: {
     flexDirection: 'row',
     gap: 10,
@@ -4213,150 +3845,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 13,
     fontWeight: 'bold'
-  },
-  chatScroll: {
-    flex: 1,
-    backgroundColor: THEME.background
-  },
-  chatRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-end'
-  },
-  chatRowMe: {
-    justifyContent: 'flex-end'
-  },
-  chatRowOther: {
-    justifyContent: 'flex-start'
-  },
-  chatAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8
-  },
-  chatAvatarText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14
-  },
-  chatSenderName: {
-    fontSize: 12,
-    color: THEME.textMuted,
-    marginBottom: 4,
-    marginLeft: 8
-  },
-  chatBubble: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    maxWidth: '100%'
-  },
-  chatBubbleMe: {
-    backgroundColor: THEME.primary,
-    marginLeft: 8
-  },
-  chatBubbleOther: {
-    backgroundColor: THEME.surface,
-    marginLeft: 8
-  },
-  chatText: {
-    fontSize: 14,
-    lineHeight: 18
-  },
-  chatTextMe: {
-    color: 'white'
-  },
-  chatTextOther: {
-    color: THEME.text
-  },
-  chatMessageTime: {
-    fontSize: 12,
-    color: THEME.textTertiary,
-    marginTop: 4,
-    marginLeft: 8
-  },
-  chatInputBar: {
-    flexDirection: 'row',
-    backgroundColor: THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    padding: 12,
-    alignItems: 'flex-end',
-    gap: 8
-  },
-  chatTextInput: {
-    flex: 1,
-    backgroundColor: THEME.background,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: THEME.text,
-    maxHeight: 100
-  },
-  chatSendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.accent,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  emptyChatText: {
-    textAlign: 'center',
-    color: THEME.textMuted,
-    fontSize: 14,
-    marginTop: 40
-  },
-  kakaoNoticeArea: {
-    backgroundColor: THEME.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  kakaoNoticeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  kakaoNoticeHeaderText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: THEME.text,
-    flex: 1,
-  },
-  kakaoNoticeTabs: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  noticeTabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FAFAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 8,
-  },
-  noticeTabBtnActive: {
-    backgroundColor: THEME.accent,
-    borderColor: THEME.accent,
-  },
-  noticeTabBtnText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#8E8E93',
-  },
-  noticeTabBtnTextActive: {
-    color: '#FFFFFF',
   },
   noticeDropdownOverlay: {
     position: 'absolute',
@@ -4389,28 +3877,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: THEME.primary,
-  },
-  backChevronBtn: {
-    paddingRight: 8,
-    paddingVertical: 4,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  leaveRoomBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8
-  },
-  leaveRoomBtnText: {
-    color: '#ef4444',
-    fontSize: 11,
-    fontWeight: 'bold'
   },
   modalProfileAvatar: {
     width: 60,
@@ -4504,76 +3970,5 @@ const styles = StyleSheet.create({
     padding: 6,
     justifyContent: 'center',
     alignItems: 'center'
-  },
-  emoticonToggleBtn: {
-    padding: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 4,
-  },
-  emoticonPickerContainer: {
-    // 채팅 컬럼은 방 상단 UI(공지·참여자 등)를 빼고 나면 219dp 밖에 안 될 때가
-    // 있는데, 피커는 280dp 였습니다. RN 의 flexShrink 기본값이 0 이라 줄어들지
-    // 못하고 그대로 넘쳐 **내비게이션 바 아래로 파고들었습니다.**
-    // 부모가 좁으면 스스로 줄어들도록 flexShrink 를 켭니다.
-    flexShrink: 1,
-    backgroundColor: '#FAFAFB',
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  emoticonPickerTitle: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.textMuted,
-    marginBottom: 10,
-  },
-  emoticonPickerScrollContainer: {
-    maxHeight: 180,
-    // 피커가 줄어들 때 실제로 줄어드는 쪽은 이 스크롤 영역이다.
-    flexShrink: 1,
-  },
-  emoticonPickerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 8,
-    paddingBottom: 10,
-  },
-  emoticonPickerItem: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 6,
-    width: '23%',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  emoticonPickerImage: {
-    width: 50,
-    height: 50,
-    resizeMode: 'contain',
-    marginBottom: 4,
-  },
-  emoticonPickerName: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  chatEmoticonBubble: {
-    padding: 2,
-    marginVertical: 8,
-  },
-  chatEmoticonImage: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
   },
 });

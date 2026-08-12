@@ -7,6 +7,7 @@ export { AuthProvider, useAuth } from './AuthContext';
 export { NetworkProvider, useNetwork } from './NetworkContext';
 export { LoadingProvider, useLoading } from './LoadingContext';
 export { NavigationProvider, useNavigation } from './NavigationContext';
+export type { AppTab } from './NavigationContext';
 export { RoomProvider, useRoom } from './RoomContext';
 export { RoomTimerProvider, useRoomTimer } from './RoomTimerContext';
 export { ProfileProvider, useProfile } from './ProfileContext';

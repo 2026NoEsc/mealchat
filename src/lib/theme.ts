@@ -12,6 +12,15 @@ export const themeColors = {
     text: '#000000', // Figma redesign text
     textMuted: '#9C9C9C', // Figma redesign muted text
     textTertiary: '#B4B2A8', // Figma redesign tertiary text
+    textSecondary: '#737373', // Figma 홈 본문 보조 텍스트
+    accentSoft: '#FF8C3B', // Figma 홈 배지 / 링크 강조 오렌지
+    accentSoftBorder: '#FFD9B8', // Figma PayNudge / 미읽음 방 카드 테두리
+    surfaceHighlight: '#FFF5EB', // Figma 미읽음 방 카드 배경
+    infoSoft: '#4A90D9', // Figma "모집중" 칩 글자
+    infoSoftBg: '#E8F2FF', // Figma "모집중" 칩 배경
+    dividerSoft: '#D3D1C6', // Figma 채팅 날짜 구분선 (배경 위에서도 보이는 톤)
+    handleBar: '#D1D1D1', // Figma 바텀시트 손잡이
+    receiptBorder: '#EF9F27', // Figma 정산 패널 영수증 점선 테두리
     border: '#E6E6E6', // Figma redesign border
     input: '#FFFFFF',
     danger: '#F53942', // Figma redesign danger
